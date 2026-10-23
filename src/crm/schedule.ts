@@ -4,6 +4,8 @@ import type { Channel } from '@/crm/types'
 export const SCHEDULE_TODAY = '2026-10-23'
 
 export type ScheduleKind = 'phone' | 'wechat' | 'visit' | 'meeting' | 'mail' | 'other'
+export type SchedulePriority = '高' | '中' | '低'
+export type ScheduleTag = '逾期1天' | '逾期2天' | '逾期3天' | '今天' | '明天' | '本周'
 
 export type ScheduleItem = {
   id: string
@@ -13,8 +15,13 @@ export type ScheduleItem = {
   company: string
   contact: string
   title: string
-  tag: '逾期1天' | '逾期2天' | '逾期3天' | '今天' | '明天' | '本周'
+  tag: ScheduleTag
+  priority: SchedulePriority
+  avatar: string
   done: boolean
+  level?: string
+  trade?: string
+  province?: string
 }
 
 export const SCHEDULE_METRICS = [
@@ -25,6 +32,7 @@ export const SCHEDULE_METRICS = [
   { key: 'visit', label: '上门拜访', value: '3', foot: '今日安排', delta: '', tone: 'violet', up: true },
   { key: 'phone', label: '电话沟通', value: '4', foot: '今日安排', delta: '', tone: 'cyan', up: true },
   { key: 'wechat', label: '微信沟通', value: '5', foot: '今日安排', delta: '', tone: 'teal', up: true },
+  { key: 'meet', label: '会议/邮件', value: '2', foot: '今日安排', delta: '', tone: 'amber', up: true },
 ] as const
 
 export const SCHEDULE_FILTERS: { id: 'all' | ScheduleKind; label: string; count: number }[] = [
@@ -37,8 +45,7 @@ export const SCHEDULE_FILTERS: { id: 'all' | ScheduleKind; label: string; count:
   { id: 'other', label: '其他', count: 1 },
 ]
 
-/** 小日历上有日程的日期（10 月） */
-export const SCHEDULE_DOT_DAYS = [8, 10, 14, 16, 18, 20, 21, 22, 23, 24, 27, 28, 30]
+export const SCHEDULE_DOT_DAYS = [8, 10, 14, 16, 18, 20, 21, 22, 23, 24, 26, 27, 28, 30]
 
 export const SCHEDULE_ITEMS: ScheduleItem[] = [
   {
@@ -48,9 +55,14 @@ export const SCHEDULE_ITEMS: ScheduleItem[] = [
     kind: 'phone',
     company: '宁波优来特进出口有限公司',
     contact: '史总',
-    title: '电话沟通续约方案，确认精品报增购意向',
+    title: '电话沟通续约方案',
     tag: '逾期1天',
+    priority: '高',
+    avatar: '史',
     done: false,
+    level: '高价值',
+    trade: '环保设备',
+    province: '浙江',
   },
   {
     id: 's2',
@@ -59,9 +71,14 @@ export const SCHEDULE_ITEMS: ScheduleItem[] = [
     kind: 'wechat',
     company: '慈溪长城制刷有限公司',
     contact: '王经理',
-    title: '微信发送新品报价，跟进反馈',
+    title: '微信发送新品报价',
     tag: '今天',
+    priority: '中',
+    avatar: '王',
     done: false,
+    level: '重要客户',
+    trade: '办公用品',
+    province: '浙江',
   },
   {
     id: 's3',
@@ -70,9 +87,14 @@ export const SCHEDULE_ITEMS: ScheduleItem[] = [
     kind: 'visit',
     company: '杭州优创五金有限公司',
     contact: '李总',
-    title: '上门拜访工厂，实地考察合作意向',
+    title: '上门拜访工厂考察',
     tag: '今天',
+    priority: '高',
+    avatar: '李',
     done: false,
+    level: '重要客户',
+    trade: '五金制品',
+    province: '浙江',
   },
   {
     id: 's4',
@@ -81,9 +103,14 @@ export const SCHEDULE_ITEMS: ScheduleItem[] = [
     kind: 'mail',
     company: '苏州精丰机械有限公司',
     contact: '赵经理',
-    title: '发送唤醒方案邮件，约下周电话',
+    title: '发送唤醒方案邮件',
     tag: '今天',
+    priority: '低',
+    avatar: '赵',
     done: true,
+    level: '潜力客户',
+    trade: '工业机械',
+    province: '江苏',
   },
   {
     id: 's5',
@@ -92,9 +119,14 @@ export const SCHEDULE_ITEMS: ScheduleItem[] = [
     kind: 'phone',
     company: '温州瑞丰电材有限公司',
     contact: '陈总',
-    title: '电话确认合同到期续签条款',
+    title: '确认合同续签条款',
     tag: '今天',
+    priority: '中',
+    avatar: '陈',
     done: false,
+    level: '重要客户',
+    trade: '电工电材',
+    province: '浙江',
   },
   {
     id: 's6',
@@ -103,9 +135,14 @@ export const SCHEDULE_ITEMS: ScheduleItem[] = [
     kind: 'meeting',
     company: '青岛海明机械设备有限公司',
     contact: '周总',
-    title: '线上会议：加购方案评审',
+    title: '线上会议评审加购方案',
     tag: '明天',
+    priority: '高',
+    avatar: '周',
     done: false,
+    level: '重要客户',
+    trade: '机械设备',
+    province: '山东',
   },
   {
     id: 's7',
@@ -114,9 +151,14 @@ export const SCHEDULE_ITEMS: ScheduleItem[] = [
     kind: 'wechat',
     company: '宁波正律电子有限公司',
     contact: '刘经理',
-    title: '微信跟进样品测试结果',
+    title: '微信跟进样品测试',
     tag: '明天',
+    priority: '中',
+    avatar: '刘',
     done: false,
+    level: '高价值',
+    trade: '电子电工',
+    province: '浙江',
   },
   {
     id: 's8',
@@ -125,9 +167,30 @@ export const SCHEDULE_ITEMS: ScheduleItem[] = [
     kind: 'visit',
     company: '台州宏中塑料有限公司',
     contact: '黄总',
-    title: '拜访客户，沟通包装材料订单',
+    title: '拜访沟通包装材料订单',
     tag: '明天',
+    priority: '低',
+    avatar: '黄',
     done: false,
+    level: '潜力客户',
+    trade: '包装材料',
+    province: '浙江',
+  },
+  {
+    id: 's9',
+    date: '2026-10-26',
+    time: '09:00',
+    kind: 'phone',
+    company: '深圳市宏达电子科技有限公司',
+    contact: '吴经理',
+    title: '电话唤醒沉睡客户',
+    tag: '本周',
+    priority: '中',
+    avatar: '吴',
+    done: false,
+    level: '潜力客户',
+    trade: '智能硬件',
+    province: '广东',
   },
 ]
 
@@ -141,15 +204,31 @@ export const SCHEDULE_WEEK_BARS = [
   { label: '日', value: 3 },
 ]
 
-export const SCHEDULE_OVERDUE = [
-  { id: 'o1', company: '东莞华兴五金制品有限公司', title: '电话唤醒沉睡客户', overdue: '逾期3天' },
-  { id: 'o2', company: '深圳市宏达电子科技有限公司', title: '发送重新合作方案', overdue: '逾期2天' },
-  { id: 'o3', company: '苏州精丰机械有限公司', title: '跟进邮件回复', overdue: '逾期2天' },
-  { id: 'o4', company: '宁波优来特进出口有限公司', title: '确认续约报价', overdue: '逾期1天' },
-  { id: 'o5', company: '温州瑞丰电材有限公司', title: '合同条款确认电话', overdue: '逾期1天' },
+export const SCHEDULE_CHANNEL_BARS = [
+  { label: '电话', value: 8, color: '#2f6bff' },
+  { label: '微信', value: 6, color: '#12b76a' },
+  { label: '拜访', value: 3, color: '#7a5af8' },
+  { label: '会议', value: 4, color: '#0ba5ec' },
+  { label: '邮件', value: 2, color: '#f79009' },
+  { label: '其他', value: 1, color: '#98a2b3' },
 ]
 
-export const SCHEDULE_DONE_TODAY = { done: 3, total: 8, pending: 5, overdue: 1, rate: 38 }
+export const SCHEDULE_OVERDUE = [
+  { id: 'o1', company: '东莞华兴五金制品有限公司', contact: '张总', title: '电话唤醒沉睡客户', overdue: '逾期3天' },
+  { id: 'o2', company: '深圳市宏达电子科技有限公司', contact: '吴经理', title: '发送重新合作方案', overdue: '逾期2天' },
+  { id: 'o3', company: '苏州精丰机械有限公司', contact: '赵经理', title: '跟进邮件回复', overdue: '逾期2天' },
+  { id: 'o4', company: '宁波优来特进出口有限公司', contact: '史总', title: '确认续约报价', overdue: '逾期1天' },
+]
+
+/** 今日完成环图：已完成 / 进行中 / 待开始 / 逾期 */
+export const SCHEDULE_DONE_TODAY = {
+  done: 38,
+  progress: 37,
+  todo: 12,
+  overdue: 13,
+  centerLabel: '完成率',
+  centerValue: '38%',
+}
 
 export function kindToChannel(kind: ScheduleKind): Channel {
   if (kind === 'other') return 'plan'
@@ -162,5 +241,5 @@ export function formatScheduleDate(iso: string) {
   const y = date.getFullYear()
   const m = date.getMonth() + 1
   const d = date.getDate()
-  return `${y}年${m}月${d}日 (周${week})`
+  return `${y}年${m}月${d}日 周${week}`
 }
