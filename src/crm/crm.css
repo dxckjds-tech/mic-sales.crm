@@ -2462,8 +2462,8 @@
 .cd-metric.tone-red .cd-metric-ico { background: #f04438; }
 
 .cd-ring {
-  font-size: 10px;
-  font-weight: 800;
+  display: block;
+  overflow: visible;
 }
 
 .cd-metric span {

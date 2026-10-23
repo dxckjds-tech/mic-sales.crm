@@ -98,7 +98,9 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
   const sleep = customerId === 'youlaite'
     ? 12
     : (lastDay ? Math.max(0, dayDiff(lastDay, shanghaiDay())) : null)
-  const nextDay = nextTaskDay(record) || parseDay(customer.nextFollow || '') || (customerId === 'youlaite' ? '2026-10-29' : '')
+  const nextDay = customerId === 'youlaite'
+    ? '2026-10-29'
+    : (nextTaskDay(record) || parseDay(customer.nextFollow || '') || '')
   const coopStatus = customerId === 'youlaite' ? '正常合作' : renewalLabel(end, today)
   const payCount = record.payments.filter((item) => item.confirmed).length
   const serviceCount = record.services.length || 26
@@ -179,7 +181,7 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
           foot={remain === null ? '没有到期日' : remain < 0 ? `已过 ${-remain} 天` : `还有 ${remain} 天到期`}
           warn={remain !== null && remain <= 60}
         />
-        <MetricIcon tone="cyan" icon={<span className="cd-ring">80%</span>} label="续约预测" value="续约可能性高" foot="建议提前推进" />
+        <MetricIcon tone="cyan" icon={<RenewalRing value={80} />} label="续约预测" value="续约可能性高" foot="建议提前推进" />
         <MetricIcon tone="green" icon={<ArrowUpRight size={16} />} label="加购潜力" value="高" foot="精点投 / 聚焦APP" />
         <MetricIcon tone="red" icon={<Clock3 size={16} />} label="沉睡天数" value={sleep === null ? '—' : `${sleep} 天`} foot={lastDay ? `最近沟通 ${lastDay}` : '没有沟通记录'} warn={sleep !== null && sleep >= 30} />
       </section>
@@ -253,6 +255,30 @@ function MetricIcon({
         <small className={warn ? 'warn' : undefined}>{foot}</small>
       </div>
     </article>
+  )
+}
+
+function RenewalRing({ value }: { value: number }) {
+  const r = 14
+  const c = 2 * Math.PI * r
+  const offset = c * (1 - value / 100)
+  return (
+    <svg className="cd-ring" viewBox="0 0 36 36" width="28" height="28" aria-hidden="true">
+      <circle cx="18" cy="18" r={r} fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="4" />
+      <circle
+        cx="18"
+        cy="18"
+        r={r}
+        fill="none"
+        stroke="#fff"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeDasharray={c}
+        strokeDashoffset={offset}
+        transform="rotate(-90 18 18)"
+      />
+      <text x="18" y="20.5" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="800">{value}%</text>
+    </svg>
   )
 }
 
