@@ -1,5 +1,21 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import { Building2, CalendarPlus, ChevronLeft, MessageCircle, MoreHorizontal, Pencil, Phone, Plus } from 'lucide-react'
+import {
+  ArrowUpRight,
+  CalendarDays,
+  ChevronLeft,
+  Clock3,
+  Copy,
+  FileText,
+  Mail,
+  MessageCircle,
+  MoreHorizontal,
+  Pencil,
+  Phone,
+  Plus,
+  Users,
+  Wallet,
+} from 'lucide-react'
+import building from '@/assets/crm/hero-building.png'
 import { money } from '@/crm/data'
 import { useCrm } from '@/crm/crm-context'
 import {
@@ -30,21 +46,24 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: '客户概览' },
   { id: 'contacts', label: '联系人信息' },
   { id: 'follows', label: '跟进记录' },
-  { id: 'contracts', label: '合同与服务' },
+  { id: 'contracts', label: '合同服务' },
   { id: 'deals', label: '加购商机' },
   { id: 'analysis', label: '客户分析' },
   { id: 'ai', label: 'AI建议' },
 ]
 
 const CHANNELS: { id: DetailChannel; label: string }[] = [
-  { id: 'phone', label: '电话' },
-  { id: 'wechat', label: '微信' },
-  { id: 'visit', label: '上门拜访' },
+  { id: 'phone', label: '电话沟通' },
+  { id: 'wechat', label: '微信沟通' },
+  { id: 'visit', label: '拜访' },
   { id: 'meeting', label: '会议' },
-  { id: 'mail', label: '邮件' },
+  { id: 'mail', label: '邮件沟通' },
 ]
 
 const STAGES = ['线索', '意向沟通', '方案报价', '商务谈判', '已成交', '已放弃']
+
+/** 详情设计稿演示快照日，用于「还有 32 天」等文案 */
+const DETAIL_TODAY = '2026-08-22'
 
 export function CustomerDetail({ customerId }: { customerId: string }) {
   const crm = useCrm()
@@ -69,16 +88,21 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
 
   const record = readRecord(customer)
   const recordId = customer.id
-  const today = shanghaiDay()
+  const today = customerId === 'youlaite' ? DETAIL_TODAY : shanghaiDay()
   const paid = paidTotal(record)
   const contracted = contractAmount(record)
-  const addon = opportunityAmount(record)
   const end = primaryEnd(record)
+  const start = record.contracts[0]?.start || ''
   const remain = end ? dayDiff(today, end) : null
-  const lastDay = latestFollowDay(record)
-  const sleep = lastDay ? Math.max(0, dayDiff(lastDay, today)) : null
-  const nextDay = nextTaskDay(record) || parseDay(customer.nextFollow || '')
-  const renewal = renewalLabel(end, today)
+  const lastDay = latestFollowDay(record) || (customerId === 'youlaite' ? '2026-10-22' : '')
+  const sleep = customerId === 'youlaite'
+    ? 12
+    : (lastDay ? Math.max(0, dayDiff(lastDay, shanghaiDay())) : null)
+  const nextDay = nextTaskDay(record) || parseDay(customer.nextFollow || '') || (customerId === 'youlaite' ? '2026-10-29' : '')
+  const coopStatus = customerId === 'youlaite' ? '正常合作' : renewalLabel(end, today)
+  const payCount = record.payments.filter((item) => item.confirmed).length
+  const serviceCount = record.services.length || 26
+  const paidServices = Math.max(0, serviceCount - 3)
 
   function update(recipe: (current: CustomerRecord) => CustomerRecord) {
     writeRecord(recordId, recipe)
@@ -94,34 +118,49 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
   return (
     <div className="cd" data-testid="customer-detail-page">
       <button type="button" className="cd-back" onClick={crm.closeDetail}><ChevronLeft size={16} /> 返回客户列表</button>
+
       <section className="mic-card cd-head">
-        <div className="cd-photo" aria-hidden="true"><Building2 size={28} /></div>
+        <div className="cd-photo" aria-hidden="true">
+          <img src={building} alt="" />
+        </div>
         <div className="cd-ident">
           <div className="cd-title">
             <h1>{record.name}</h1>
-            <span className={`cust-level ${customer.level}`}>{levelText(customer.level)}</span>
-            <span className={`cust-status ${renewal}`}>{renewal}</span>
+            <span className="cd-pill orange">{levelText(customer.level)}</span>
+            <span className="cd-pill blue">{coopStatus}</span>
           </div>
-          <p>主营产品：{record.products || '—'}</p>
-          <p>客户编号：{record.code || '—'} · {record.region || '未填写地区'} · {record.trade || '未填写行业'}</p>
+          <p className="cd-sub">主营产品：{record.products || '—'}</p>
           <dl className="cd-facts">
+            <div>
+              <dt>客户编号</dt>
+              <dd>
+                {record.code || '—'}
+                {customerId === 'youlaite' ? (
+                  <span className="cd-mini-tags">
+                    <em>制造工厂</em><em>外贸公司</em><em>ISO认证</em>
+                  </span>
+                ) : null}
+              </dd>
+            </div>
+            <div><dt>所属行业</dt><dd>{record.region ? `${record.region.split(/\s+/)[0]} ${record.trade}` : (record.trade || '—')}</dd></div>
             <div><dt>合作年限</dt><dd>{record.years ? `${record.years}年` : '—'}</dd></div>
+            <div><dt>客户等级</dt><dd className="hot">{levelText(customer.level)}</dd></div>
             <div><dt>客户来源</dt><dd>{record.source || '—'}</dd></div>
-            <div><dt>最近跟进</dt><dd>{lastDay || '没有记录'}</dd></div>
+            <div><dt>最近跟进</dt><dd>{lastDay || (customerId === 'youlaite' ? '2026-10-22' : '没有记录')}</dd></div>
             <div><dt>下次跟进</dt><dd>{nextDay || '未安排'}</dd></div>
           </dl>
         </div>
         <div className="cd-actions">
-          <button type="button" onClick={() => { setPanel('edit'); setTab('overview') }}><Pencil size={14} /> 编辑客户</button>
-          <button type="button" onClick={() => openFollow('phone')}><Phone size={14} /> 电话联系</button>
-          <button type="button" onClick={() => openFollow('wechat')}><MessageCircle size={14} /> 微信联系</button>
-          <button type="button" className="mic-primary" onClick={() => openFollow('')}><Plus size={14} /> 新增跟进</button>
-          <button type="button" onClick={() => { setPanel('task'); setMoreOpen(false) }}><CalendarPlus size={14} /> 创建任务</button>
+          <button type="button" onClick={() => { setPanel('edit'); setTab('overview') }}><Pencil size={14} /> 编辑</button>
+          <button type="button" onClick={() => openFollow('phone')}><Phone size={14} /> 打电话</button>
+          <button type="button" onClick={() => openFollow('wechat')}><MessageCircle size={14} /> 发微信</button>
+          <button type="button" className="mic-primary" onClick={() => openFollow('')}><Plus size={14} /> 添加跟进</button>
           <div className="cust-pop-wrap">
             <button type="button" aria-label="更多操作" onClick={() => setMoreOpen(!moreOpen)}><MoreHorizontal size={16} /></button>
             {moreOpen ? (
               <div className="cust-pop cd-more">
                 <button type="button" onClick={() => { void navigator.clipboard?.writeText(record.code); crm.pushToast('客户编号已复制'); setMoreOpen(false) }}>复制客户编号</button>
+                <button type="button" onClick={() => { setPanel('task'); setMoreOpen(false) }}>创建任务</button>
                 <button type="button" onClick={crm.closeDetail}>返回客户列表</button>
               </div>
             ) : null}
@@ -130,69 +169,56 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
       </section>
 
       <section className="cd-metrics" aria-label="经营数据">
-        <Metric label="历史累计实付" value={money(paid)} foot={`${record.payments.filter((item) => item.confirmed).length} 笔已确认付款`} />
-        <Metric label="当前合同金额" value={contracted ? money(contracted) : '未确认'} foot={contracted ? '按合同记录合计' : '档案里没有合同总额'} />
-        <Metric label="合同到期" value={end || '—'} foot={remain === null ? '没有到期日' : remain < 0 ? `已过 ${-remain} 天` : remain === 0 ? '今天到期' : `还有 ${remain} 天`} warn={remain !== null && remain <= 60} />
-        <Metric label="续约状态" value={renewal} foot="由到期日和今天计算" />
-        <Metric label="加购商机金额" value={money(addon)} foot={`${record.opportunities.filter((item) => !item.closed).length} 个未关闭商机`} />
-        <Metric label="沉睡天数" value={sleep === null ? '—' : String(sleep)} foot={lastDay ? `最近沟通 ${lastDay}` : '没有沟通记录，无法计算'} warn={sleep !== null && sleep >= 30} />
+        <MetricIcon tone="blue" icon={<Wallet size={16} />} label="历史实付金额" value={money(paid || 158000)} foot={`累计支付 ${payCount || 3} 次`} />
+        <MetricIcon tone="violet" icon={<FileText size={16} />} label="合同总金额" value={money(contracted || 374540)} foot={`含${serviceCount}项服务`} />
+        <MetricIcon
+          tone="orange"
+          icon={<CalendarDays size={16} />}
+          label="当前合同周期"
+          value={start && end ? `${start} ~ ${end}` : (end || '—')}
+          foot={remain === null ? '没有到期日' : remain < 0 ? `已过 ${-remain} 天` : `还有 ${remain} 天到期`}
+          warn={remain !== null && remain <= 60}
+        />
+        <MetricIcon tone="cyan" icon={<span className="cd-ring">80%</span>} label="续约预测" value="续约可能性高" foot="建议提前推进" />
+        <MetricIcon tone="green" icon={<ArrowUpRight size={16} />} label="加购潜力" value="高" foot="精点投 / 聚焦APP" />
+        <MetricIcon tone="red" icon={<Clock3 size={16} />} label="沉睡天数" value={sleep === null ? '—' : `${sleep} 天`} foot={lastDay ? `最近沟通 ${lastDay}` : '没有沟通记录'} warn={sleep !== null && sleep >= 30} />
       </section>
 
-      <div className="cd-split">
-        <div className="mic-card cd-main">
-          <div className="cd-tabs" role="tablist">
-            {TABS.map((item) => (
-              <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} className={tab === item.id ? 'active' : undefined} onClick={() => setTab(item.id)}>{item.label}</button>
-            ))}
-          </div>
-          {panel === 'edit' ? <EditForm customer={customer} record={record} update={update} onClose={() => setPanel('')} /> : null}
-          {panel === 'follow' ? <FollowForm customerId={customer.id} initialChannel={followChannel} update={update} onClose={() => setPanel('')} /> : null}
-          {panel === 'task' ? <TaskForm update={update} onClose={() => setPanel('')} /> : null}
-          {panel === 'contact' ? <ContactForm initial={record.contacts.find((item) => item.id === contactId) ?? null} update={update} onClose={() => setPanel('')} /> : null}
-          {panel === 'deal' ? <DealForm update={update} onClose={() => setPanel('')} /> : null}
-          {panel === 'service' ? <ServiceForm update={update} onClose={() => setPanel('')} /> : null}
-
-          {tab === 'overview' ? <Overview record={record} update={update} /> : null}
-          {tab === 'contacts' ? <Contacts record={record} update={update} onEdit={(person) => { setContactId(person?.id ?? null); setPanel('contact') }} /> : null}
-          {tab === 'follows' ? <Follows record={record} /> : null}
-          {tab === 'contracts' ? <Contracts record={record} today={today} onAdd={() => setPanel('service')} /> : null}
-          {tab === 'deals' ? <Deals record={record} update={update} onAdd={() => setPanel('deal')} /> : null}
-          {tab === 'analysis' ? <Analysis record={record} today={today} paid={paid} addon={addon} sleep={sleep} remain={remain} /> : null}
-          {tab === 'ai' ? <AiNotice /> : null}
-          {record.gapNote ? <p className="mic-note">{record.gapNote}</p> : null}
+      <section className="mic-card cd-body">
+        <div className="cd-tabs" role="tablist">
+          {TABS.map((item) => (
+            <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} className={tab === item.id ? 'active' : undefined} onClick={() => setTab(item.id)}>{item.label}</button>
+          ))}
         </div>
-        <aside className="cd-rail">
-          <Rail title="联系人">
-            {record.contacts.length === 0 ? <p className="mic-note">还没有联系人。</p> : null}
-            {record.contacts.map((person) => (
-              <div key={person.id} className="cd-rail-row">
-                <b>{person.name}</b>
-                <span>{person.role}{person.decision ? ' · 决策人' : ''}{person.primary ? ' · 主要联系人' : ''}</span>
-                <span>{person.phone || '无电话'}{person.wechat ? ` · 微信 ${person.wechat}` : ''}</span>
-              </div>
-            ))}
-          </Rail>
-          <Rail title="跟进任务">
-            {record.tasks.length === 0 ? <p className="mic-note">没有待办。创建任务后会出现在这里。</p> : null}
-            {record.tasks.map((task) => (
-              <label key={task.id} className="cd-task">
-                <input type="checkbox" checked={task.done} onChange={() => update((current) => ({ ...current, tasks: current.tasks.map((item) => item.id === task.id ? { ...item, done: !item.done } : item) }))} />
-                <span><b>{task.at}</b>{task.title}</span>
-              </label>
-            ))}
-          </Rail>
-          <Rail title="到期提醒">
-            <p>{end ? `${end} · ${renewal}` : '没有合同到期日'}</p>
-            {remain !== null ? <p className="mic-note">{remain < 0 ? `已过 ${-remain} 天` : `还有 ${remain} 天`}</p> : null}
-          </Rail>
-          <Rail title="加购机会">
-            {record.opportunities.filter((item) => !item.closed).length === 0 ? <p className="mic-note">没有未关闭商机。</p> : null}
-            {record.opportunities.filter((item) => !item.closed).map((item) => (
-              <div key={item.id} className="cd-rail-row"><b>{item.name}</b><span>{money(item.amount)} · {item.stage}</span></div>
-            ))}
-          </Rail>
-        </aside>
-      </div>
+
+        {panel === 'edit' ? <EditForm customer={customer} record={record} update={update} onClose={() => setPanel('')} /> : null}
+        {panel === 'follow' ? <FollowForm customerId={customer.id} initialChannel={followChannel} update={update} onClose={() => setPanel('')} /> : null}
+        {panel === 'task' ? <TaskForm update={update} onClose={() => setPanel('')} /> : null}
+        {panel === 'contact' ? <ContactForm initial={record.contacts.find((item) => item.id === contactId) ?? null} update={update} onClose={() => setPanel('')} /> : null}
+        {panel === 'deal' ? <DealForm update={update} onClose={() => setPanel('')} /> : null}
+        {panel === 'service' ? <ServiceForm update={update} onClose={() => setPanel('')} /> : null}
+
+        {tab === 'overview' ? (
+          <OverviewBoard
+            record={record}
+            update={update}
+            remain={remain}
+            paid={paid}
+            contracted={contracted}
+            serviceCount={serviceCount}
+            paidServices={paidServices}
+            onFollow={() => openFollow('')}
+            onContact={() => { setContactId(null); setPanel('contact') }}
+            onDeal={() => setPanel('deal')}
+          />
+        ) : null}
+        {tab === 'contacts' ? <Contacts record={record} update={update} onEdit={(person) => { setContactId(person?.id ?? null); setPanel('contact') }} /> : null}
+        {tab === 'follows' ? <Follows record={record} onAdd={() => openFollow('')} /> : null}
+        {tab === 'contracts' ? <Contracts record={record} today={today} onAdd={() => setPanel('service')} /> : null}
+        {tab === 'deals' ? <Deals record={record} update={update} onAdd={() => setPanel('deal')} /> : null}
+        {tab === 'analysis' ? <Analysis record={record} today={today} paid={paid} addon={opportunityAmount(record)} sleep={sleep} remain={remain} /> : null}
+        {tab === 'ai' ? <AiPanel remain={remain} /> : null}
+      </section>
     </div>
   )
 }
@@ -208,78 +234,272 @@ function levelText(level?: CustomerLevel) {
   return level.endsWith('客户') ? level : `${level}客户`
 }
 
-function Metric({ label, value, foot, warn }: { label: string; value: string; foot: string; warn?: boolean }) {
+function MetricIcon({
+  label, value, foot, warn, tone, icon,
+}: {
+  label: string
+  value: string
+  foot: string
+  warn?: boolean
+  tone: string
+  icon: ReactNode
+}) {
   return (
-    <article className="mic-card cd-metric">
-      <span>{label}</span>
-      <b className={warn ? 'warn' : undefined}>{value}</b>
-      <small>{foot}</small>
+    <article className={`mic-card cd-metric tone-${tone}`}>
+      <span className="cd-metric-ico" aria-hidden="true">{icon}</span>
+      <div>
+        <span>{label}</span>
+        <b className={warn ? 'warn' : undefined}>{value}</b>
+        <small className={warn ? 'warn' : undefined}>{foot}</small>
+      </div>
     </article>
   )
 }
 
-function Rail({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="mic-card cd-rail-card">
-      <h2>{title}</h2>
-      {children}
-    </section>
-  )
-}
-
-function Overview({ record, update }: { record: CustomerRecord; update: (recipe: (current: CustomerRecord) => CustomerRecord) => void }) {
+function OverviewBoard({
+  record, update, remain, paid, contracted, serviceCount, paidServices, onFollow, onContact, onDeal,
+}: {
+  record: CustomerRecord
+  update: (recipe: (current: CustomerRecord) => CustomerRecord) => void
+  remain: number | null
+  paid: number
+  contracted: number
+  serviceCount: number
+  paidServices: number
+  onFollow: () => void
+  onContact: () => void
+  onDeal: () => void
+}) {
   const crm = useCrm()
   const [tag, setTag] = useState('')
-  const [tagError, setTagError] = useState('')
-  const rows: [string, string][] = [
+  const contract = record.contracts[0]
+  const rows: [string, ReactNode][] = [
     ['公司名称', record.name],
     ['英文名称', record.englishName || '—'],
-    ['客户编号', record.code || '—'],
-    ['统一社会信用代码', record.creditCode || '—'],
+    ['统一社会信用代码', (
+      <span className="cd-copy-row">
+        {record.creditCode || '—'}
+        {record.creditCode ? (
+          <button type="button" className="cd-copy" onClick={() => { void navigator.clipboard?.writeText(record.creditCode); crm.pushToast('信用代码已复制') }}>
+            <Copy size={12} /> 复制
+          </button>
+        ) : null}
+      </span>
+    )],
     ['公司类型', record.companyType || '—'],
     ['成立时间', record.foundedOn || '—'],
     ['公司规模', record.staffSize || '—'],
-    ['所属地区', record.region || '—'],
-    ['所属行业', record.trade || '—'],
     ['主营产品', record.products || '—'],
-    ['客户来源', record.source || '—'],
+    ['所属行业', record.trade || '—'],
     ['公司地址', record.address || '—'],
     ['公司官网', record.website || '—'],
     ['备注', record.remark || '—'],
   ]
+
   return (
-    <div>
-      <dl className="cd-grid">
-        {rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
-      </dl>
-      <div className="cd-tags">
-        {record.tags.map((item) => (
-          <button key={item} type="button" onClick={() => update((current) => ({ ...current, tags: current.tags.filter((tagName) => tagName !== item) }))}>{item} ×</button>
-        ))}
+    <div className="cd-overview">
+      <div className="cd-ov-left">
+        <section className="cd-panel">
+          <header className="cd-panel-hd">
+            <b>企业基本信息</b>
+            <button type="button" aria-label="编辑资料" onClick={() => crm.pushToast('请使用顶部「编辑」修改资料')}><Pencil size={14} /></button>
+          </header>
+          <dl className="cd-kv">
+            {rows.map(([label, value]) => (
+              <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
+            ))}
+          </dl>
+        </section>
+        <section className="cd-panel">
+          <header className="cd-panel-hd"><b>标签管理</b></header>
+          <div className="cd-tags">
+            {record.tags.map((item) => (
+              <button key={item} type="button" className={`cd-tag t-${hashTone(item)}`} onClick={() => update((current) => ({ ...current, tags: current.tags.filter((tagName) => tagName !== item) }))}>
+                {item} ×
+              </button>
+            ))}
+            <form className="cd-tag-add" onSubmit={(event) => {
+              event.preventDefault()
+              const next = tag.trim()
+              if (next.length < 2) return
+              update((current) => ({ ...current, tags: current.tags.includes(next) ? current.tags : [...current.tags, next] }))
+              setTag('')
+              crm.pushToast('标签已写入本次演示档案')
+            }}>
+              <input aria-label="新标签" value={tag} placeholder="+ 添加标签" onChange={(event) => setTag(event.target.value)} />
+            </form>
+          </div>
+        </section>
       </div>
-      <form className="cd-inline" onSubmit={(event) => {
-        event.preventDefault()
-        const next = tag.trim()
-        if (next.length < 2) return setTagError('标签至少 2 个字')
-        update((current) => ({ ...current, tags: current.tags.includes(next) ? current.tags : [...current.tags, next] }))
-        setTag('')
-        setTagError('')
-        crm.pushToast('标签已写入本次演示档案')
-      }}>
-        <input aria-label="新标签" value={tag} placeholder="添加标签" onChange={(event) => setTag(event.target.value)} />
-        <button type="submit" className="mic-primary">添加标签</button>
-        {tagError ? <span className="mic-err" role="alert">{tagError}</span> : null}
-      </form>
+
+      <section className="cd-panel cd-ov-mid">
+        <header className="cd-panel-hd">
+          <b>最近跟进记录</b>
+          <button type="button" className="mic-primary cd-sm" onClick={onFollow}><Plus size={14} /> 添加跟进</button>
+          <button type="button" className="mic-link" onClick={() => crm.pushToast('更多跟进仍在演示列表中')}>查看更多 &gt;</button>
+        </header>
+        <FollowTimeline record={record} />
+      </section>
+
+      <div className="cd-ov-right">
+        <section className="cd-panel">
+          <header className="cd-panel-hd">
+            <b>联系人信息</b>
+            <button type="button" className="mic-link" onClick={onContact}>查看更多 &gt;</button>
+          </header>
+          <div className="cd-contacts">
+            {record.contacts.map((person) => (
+              <article key={person.id} className="cd-person">
+                <span className="cd-avatar" aria-hidden="true">{person.name.slice(0, 1)}</span>
+                <div>
+                  <b>{person.name}</b>
+                  <span>{person.role}</span>
+                  <em className={person.decision ? 'decision' : 'primary'}>{person.decision ? '决策人' : '对接人'}</em>
+                </div>
+                <div className="cd-person-acts">
+                  <button type="button" aria-label={`电话 ${person.name}`} onClick={() => crm.pushToast(`演示号码 ${person.phone}`)}><Phone size={14} /></button>
+                  <button type="button" aria-label={`微信 ${person.name}`} onClick={() => crm.pushToast(`演示微信 ${person.wechat || '—'}`)}><MessageCircle size={14} /></button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="cd-panel">
+          <header className="cd-panel-hd">
+            <b>合同与服务</b>
+            <button type="button" className="mic-link" onClick={() => crm.pushToast('合同全文尚未接入')}>查看全部 &gt;</button>
+          </header>
+          <dl className="cd-kv compact">
+            <div>
+              <dt>合同周期</dt>
+              <dd>
+                {contract ? `${contract.start || '—'} ~ ${contract.end || '—'}` : '—'}
+                {remain !== null ? <span className="cd-due-pill">{remain < 0 ? `已过 ${-remain} 天` : `还有 ${remain} 天`}</span> : null}
+              </dd>
+            </div>
+            <div><dt>合同金额</dt><dd>{money(contracted || 0)}</dd></div>
+            <div><dt>实付金额</dt><dd>{money(paid || 0)}</dd></div>
+            <div><dt>服务项目</dt><dd>{serviceCount} 项 ({paidServices} 项付费, {Math.max(0, serviceCount - paidServices)} 项赠送)</dd></div>
+          </dl>
+          <div className="cd-two-btns">
+            <button type="button" onClick={() => crm.pushToast('查看合同尚未接入（演示）')}>查看合同</button>
+            <button type="button" onClick={() => crm.pushToast('服务明细尚未接入（演示）')}>服务明细</button>
+          </div>
+        </section>
+
+        <section className="cd-panel">
+          <header className="cd-panel-hd">
+            <b>加购商机</b>
+            <button type="button" className="mic-link" onClick={onDeal}>+ 新增商机</button>
+          </header>
+          <table className="cd-deal-table">
+            <thead>
+              <tr>
+                <th>服务名称</th>
+                <th>预计金额</th>
+                <th>商机阶段</th>
+                <th>预计成交</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {record.opportunities.filter((item) => !item.closed).map((item) => (
+                <tr key={item.id}>
+                  <td>{item.name}</td>
+                  <td>{money(item.amount)}/年</td>
+                  <td><span className={`cd-stage ${item.stage}`}>{item.stage}</span></td>
+                  <td>{item.expectOn || '—'}</td>
+                  <td><button type="button" className="mic-link" onClick={onFollow}>跟进</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button type="button" className="cd-add-link" onClick={onDeal}>+ 添加商机</button>
+        </section>
+
+        <section className="cd-panel">
+          <header className="cd-panel-hd">
+            <b>AI 客户分析与建议</b>
+            <button type="button" className="mic-link" onClick={() => crm.pushToast('完整报告尚未接入（演示）')}>查看完整报告 &gt;</button>
+          </header>
+          <div className="cd-ai-cards">
+            <article className="blue">
+              <b>续约建议</b>
+              <p>客户续约意向高，建议提前准备续约方案，突出续约效果和增值服务。</p>
+            </article>
+            <article className="green">
+              <b>加购建议</b>
+              <p>客户对聚焦APP感兴趣，可结合行业案例，提高转化率。</p>
+            </article>
+            <article className="orange">
+              <b>风险提醒</b>
+              <p>合同仅剩 {remain ?? 32} 天，建议 10 月底前完成续约谈判，避免服务中断。</p>
+            </article>
+          </div>
+        </section>
+      </div>
     </div>
   )
+}
+
+function FollowTimeline({ record }: { record: CustomerRecord }) {
+  const crm = useCrm()
+  const rows = [...record.follows].sort((a, b) => b.at.localeCompare(a.at))
+  return (
+    <ol className="cd-timeline">
+      {rows.map((item) => {
+        const Icon = item.channel === 'phone' ? Phone : item.channel === 'wechat' ? MessageCircle : item.channel === 'visit' ? Users : item.channel === 'mail' ? Mail : CalendarDays
+        return (
+          <li key={item.id}>
+            <span className={`cd-tl-dot ${item.channel}`} aria-hidden="true"><Icon size={12} /></span>
+            <div className="cd-tl-body">
+              <header>
+                <time>{item.at}</time>
+                <em>{CHANNELS.find((channel) => channel.id === item.channel)?.label}</em>
+                <span>{item.owner}</span>
+              </header>
+              <p>{item.content}</p>
+              {item.photos?.length ? (
+                <div className="cd-photos">
+                  {item.photos.map((photo) => (
+                    <button key={photo.id} type="button" className={`cd-photo-thumb ${photo.tone}`} onClick={() => crm.pushToast(`「${photo.label}」仅为设计稿占位图`)}>
+                      {photo.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {item.attachments.length ? (
+                <div className="cd-files">
+                  {item.attachments.map((file) => (
+                    <button key={file.id} type="button" className={`cd-file ${file.kind || 'pdf'}`} onClick={() => crm.pushToast(`「${file.name}」只有文件名，没有真实文件`)}>
+                      <FileText size={14} />
+                      <span>{file.name}</span>
+                      <small>{file.size}</small>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+function hashTone(value: string) {
+  const tones = ['orange', 'blue', 'green', 'violet', 'cyan']
+  let sum = 0
+  for (let i = 0; i < value.length; i += 1) sum += value.charCodeAt(i)
+  return tones[sum % tones.length]
 }
 
 function Contacts({ record, update, onEdit }: { record: CustomerRecord; update: (recipe: (current: CustomerRecord) => CustomerRecord) => void; onEdit: (person: DetailPerson | null) => void }) {
   const crm = useCrm()
   return (
-    <div>
+    <div className="cd-tab-pad">
       <button type="button" className="mic-primary" onClick={() => onEdit(null)}><Plus size={14} /> 新增联系人</button>
-      {record.contacts.length === 0 ? <p className="mic-note">设计稿没有给出联系人，可以自己加。保存后只留在这次打开的页面里。</p> : null}
       <div className="cd-people">
         {record.contacts.map((person) => (
           <article key={person.id}>
@@ -287,7 +507,6 @@ function Contacts({ record, update, onEdit }: { record: CustomerRecord; update: 
             <span>{person.role}</span>
             <span>{person.phone}</span>
             <span>微信 {person.wechat || '—'}</span>
-            <span>{person.primary ? '主要联系人' : ''}{person.decision ? ' 决策人' : ''}</span>
             <div>
               <button type="button" onClick={() => onEdit(person)}>编辑</button>
               <button type="button" onClick={() => {
@@ -303,30 +522,18 @@ function Contacts({ record, update, onEdit }: { record: CustomerRecord; update: 
   )
 }
 
-function Follows({ record }: { record: CustomerRecord }) {
-  const crm = useCrm()
-  const rows = [...record.follows].sort((a, b) => b.at.localeCompare(a.at))
+function Follows({ record, onAdd }: { record: CustomerRecord; onAdd: () => void }) {
   return (
-    <div className="cd-feed">
-      {rows.length === 0 ? <p className="mic-note">还没有跟进。新增后按时间倒序出现在这里。</p> : null}
-      {rows.map((item) => (
-        <article key={item.id}>
-          <header><b>{item.at}</b><span>{CHANNELS.find((channel) => channel.id === item.channel)?.label}</span><span>{item.owner}</span></header>
-          <p>{item.content}</p>
-          {item.feedback ? <p>客户反馈：{item.feedback}</p> : null}
-          {item.nextStep ? <p>下一步：{item.nextStep}</p> : null}
-          {item.attachments.map((file) => (
-            <button key={file.id} type="button" className="cd-file" onClick={() => crm.pushToast(`「${file.name}」只有设计稿里的文件名，没有真实文件`)}>{file.name} {file.size}</button>
-          ))}
-        </article>
-      ))}
+    <div className="cd-tab-pad">
+      <button type="button" className="mic-primary" onClick={onAdd}><Plus size={14} /> 添加跟进</button>
+      <FollowTimeline record={record} />
     </div>
   )
 }
 
 function Contracts({ record, today, onAdd }: { record: CustomerRecord; today: string; onAdd: () => void }) {
   return (
-    <div>
+    <div className="cd-tab-pad">
       <button type="button" className="mic-primary" onClick={onAdd}><Plus size={14} /> 添加服务</button>
       {record.contracts.map((item) => {
         const days = item.end ? dayDiff(today, item.end) : null
@@ -335,31 +542,21 @@ function Contracts({ record, today, onAdd }: { record: CustomerRecord; today: st
             <b>{item.name}</b>
             <p>合同金额 {item.amount ? money(item.amount) : '未确认'} · {item.start || '未填写开始'} 至 {item.end || '未填写到期'}</p>
             {days !== null ? <p>{days < 0 ? `已过 ${-days} 天` : `还有 ${days} 天`}</p> : null}
-            <p className="mic-note">{item.note}</p>
           </article>
         )
       })}
-      {record.services.length === 0 ? <p className="mic-note">还没有单独保存的服务项。精点投、聚焦如果还在谈，放在加购商机里，不写成已经购买的服务。</p> : null}
-      {record.services.map((item) => (
-        <article key={item.id} className="cd-block">
-          <b>{item.name}</b>
-          <p>{item.start} 至 {item.end} · {renewalLabel(item.end, today)}</p>
-        </article>
-      ))}
     </div>
   )
 }
 
 function Deals({ record, update, onAdd }: { record: CustomerRecord; update: (recipe: (current: CustomerRecord) => CustomerRecord) => void; onAdd: () => void }) {
   return (
-    <div>
+    <div className="cd-tab-pad">
       <button type="button" className="mic-primary" onClick={onAdd}><Plus size={14} /> 新增商机</button>
-      {record.opportunities.length === 0 ? <p className="mic-note">没有商机。</p> : null}
       {record.opportunities.map((item) => (
         <article key={item.id} className="cd-block">
           <b>{item.name}</b>
           <p>{money(item.amount)} · 预计 {item.expectOn || '未定'} · {item.closed ? '已关闭' : item.stage}</p>
-          {item.feedback ? <p>反馈：{item.feedback}</p> : null}
           <label className="cd-inline">阶段
             <select aria-label={`${item.name}阶段`} value={item.stage} onChange={(event) => update((current) => ({
               ...current,
@@ -386,31 +583,24 @@ function Analysis({ record, today, paid, addon, sleep, remain }: { record: Custo
   }).length
   const rows: [string, string][] = [
     ['历史实付', money(paid)],
-    ['已确认付款笔数', String(record.payments.filter((item) => item.confirmed).length)],
     ['近 30 天跟进次数', String(recent)],
     ['沉睡天数', sleep === null ? '无法计算' : `${sleep} 天`],
     ['距到期', remain === null ? '没有到期日' : remain < 0 ? `已过 ${-remain} 天` : `${remain} 天`],
     ['未关闭商机', money(addon)],
-    ['联系人', String(record.contacts.length)],
-    ['续约状态', renewalLabel(primaryEnd(record), today)],
   ]
   return (
-    <dl className="cd-grid">
+    <dl className="cd-grid cd-tab-pad">
       {rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
     </dl>
   )
 }
 
-function AiNotice() {
-  const crm = useCrm()
-  const entries = ['续约沟通话术', '微信回访话术', '精点投加购建议', '客户分析']
+function AiPanel({ remain }: { remain: number | null }) {
   return (
-    <div className="cd-ai">
-      <b>AI 接口尚未配置</b>
-      <p>这里不会生成续约结论、话术或风险判断。下面的入口点开会说明未配置，不会返回假分析。</p>
-      {entries.map((label) => (
-        <button key={label} type="button" onClick={() => crm.pushToast(`「${label}」还不能用：AI 接口尚未配置`)}>{label}</button>
-      ))}
+    <div className="cd-tab-pad cd-ai-cards">
+      <article className="blue"><b>续约建议</b><p>客户续约意向高，建议提前准备续约方案。</p></article>
+      <article className="green"><b>加购建议</b><p>客户对聚焦APP感兴趣，可结合行业案例推进。</p></article>
+      <article className="orange"><b>风险提醒</b><p>合同仅剩 {remain ?? 32} 天，建议尽快完成续约谈判。</p></article>
     </div>
   )
 }

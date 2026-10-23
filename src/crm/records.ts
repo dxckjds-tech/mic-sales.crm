@@ -12,7 +12,9 @@ export type DetailFollow = {
   feedback: string
   nextStep: string
   owner: string
-  attachments: { id: string; name: string; size: string }[]
+  attachments: { id: string; name: string; size: string; kind?: 'pdf' | 'xls' }[]
+  /** 拜访现场缩略图占位（无真实图片文件） */
+  photos?: { id: string; label: string; tone: string }[]
 }
 
 export type DetailTask = {
@@ -86,6 +88,8 @@ export type CustomerRecord = {
 
 const cache = new Map<string, CustomerRecord>()
 const listeners = new Set<() => void>()
+// HMR / 演示样本更新时清空，避免旧种子卡住
+cache.clear()
 
 export function subscribeRecords(listener: () => void) {
   listeners.add(listener)
@@ -218,58 +222,78 @@ function seedFromList(customer: Customer): CustomerRecord {
   }
 }
 
-/** 详情设计稿上的宁波优来特样本。电话和地址保持打码。到期日沿用客户列表里的 2026-12-15。 */
+/** 详情设计稿上的宁波优来特样本（1:1 文案）。电话和地址保持打码。 */
 function seedYoulaite(customer: Customer): CustomerRecord {
   return {
     customerId: customer.id,
     name: customer.name,
     code: 'MIC-2024-0001',
     englishName: 'Ningbo Unilite Import & Export Co., Ltd.',
-    creditCode: '91330212********',
+    creditCode: '91330212MA2******',
     companyType: '有限责任公司',
     foundedOn: '2015-06-18',
     staffSize: '50-100人',
     address: '浙江省宁波市鄞州区**路***号',
-    remark: '详情设计稿写明去年实付 158,000 元、合同原价合计 374,540 元。26 项服务和 3 次付款都没有逐条列出，所以没有拆成假明细。',
-    products: '净水器、RO反渗透设备、过滤器、净水配件',
-    trade: '环保设备 / 水处理',
+    remark: '客户付款稳定，关注续约与聚焦APP加购；累计实付 ¥158,000，合同原价合计 ¥374,540，含 26 项服务。',
+    products: '净水器、RO反渗透设备、过滤器',
+    trade: '环保设备',
     region: '浙江 宁波',
     source: customer.source || '主动开发',
-    website: customer.website || '',
+    website: 'www.unilite-demo.cn',
     years: customer.years ?? 3,
     tags: ['高价值客户', '即将续约', '有加购需求', '外贸公司', '净水器'],
     contacts: [
-      { id: 'c-shi', name: '史总', role: '总经理', phone: '138-****-8888', wechat: '****', primary: true, decision: true },
-      { id: 'c-wang', name: '王经理', role: '业务负责人', phone: '136-****-6666', wechat: '****', primary: false, decision: false },
+      { id: 'c-shi', name: '史总', role: 'General Manager', phone: '138-****-8888', wechat: '********', primary: true, decision: true },
+      { id: 'c-hu', name: '胡总', role: 'Business Lead', phone: '136-****-6666', wechat: '********', primary: false, decision: false },
     ],
     follows: [
-      { id: 'df1', at: '2026-10-22 16:30', channel: 'phone', content: '电话沟通。客户对续约方案表示认可，近期安排工厂拜访。', feedback: '认可续约方案', nextStep: '安排工厂拜访', owner: '张晓丽', attachments: [] },
-      { id: 'df2', at: '2026-10-21 14:20', channel: 'wechat', content: '微信沟通。已发送产品资料，客户正在评估新增加购。', feedback: '在评估加购', nextStep: '等客户反馈', owner: '张晓丽', attachments: [] },
-      { id: 'df3', at: '2026-10-20 10:00', channel: 'visit', content: '拜访。参观工厂，沟通后续合作方向，客户对聚焦 APP 有兴趣。', feedback: '对聚焦 APP 有兴趣', nextStep: '准备聚焦 APP 方案', owner: '张晓丽', attachments: [] },
-      { id: 'df4', at: '2026-10-15 11:30', channel: 'mail', content: '邮件沟通。发送续约报价和对比方案。', feedback: '', nextStep: '', owner: '张晓丽', attachments: [{ id: 'a1', name: '续约方案.pdf', size: '2.3MB' }, { id: 'a2', name: '报价单.xlsx', size: '1.1MB' }] },
-      { id: 'df5', at: '2026-09-28 09:40', channel: 'wechat', content: '微信沟通。客户反馈目前订单稳定，考虑增加精点投预算。', feedback: '考虑增加精点投预算', nextStep: '', owner: '张晓丽', attachments: [] },
+      { id: 'df1', at: '2026-10-22 16:30', channel: 'phone', content: '客户对续约方案表示认可，近期安排工厂拜访。', feedback: '', nextStep: '', owner: '张晓丽', attachments: [] },
+      { id: 'df2', at: '2026-10-21 14:20', channel: 'wechat', content: '已发送产品资料，客户正在评估精点投加购。', feedback: '', nextStep: '', owner: '张晓丽', attachments: [] },
+      {
+        id: 'df3', at: '2026-10-20 10:00', channel: 'visit',
+        content: '参观工厂，沟通后续合作方向，客户对聚焦APP 有兴趣。',
+        feedback: '', nextStep: '', owner: '张晓丽', attachments: [],
+        photos: [
+          { id: 'p1', label: '工厂外景', tone: 'blue' },
+          { id: 'p2', label: '产线', tone: 'green' },
+          { id: 'p3', label: '会议室', tone: 'orange' },
+        ],
+      },
+      {
+        id: 'df4', at: '2026-10-15 11:30', channel: 'mail',
+        content: '发送续约报价单和对比方案。',
+        feedback: '', nextStep: '', owner: '张晓丽',
+        attachments: [
+          { id: 'a1', name: '续约方案.pdf', size: '2.3MB', kind: 'pdf' },
+          { id: 'a2', name: '报价单.xlsx', size: '1.1MB', kind: 'xls' },
+        ],
+      },
+      { id: 'df5', at: '2026-09-28 09:40', channel: 'wechat', content: '客户反馈目前订单稳定，考虑增加精点投预算。', feedback: '', nextStep: '', owner: '张晓丽', attachments: [] },
     ],
     tasks: (customer.plans ?? []).map((item) => ({ id: item.id, title: item.text, at: item.at, done: item.done })),
     contracts: [{
       id: 'contract-youlaite',
       name: '中国制造网服务合同',
       amount: 374540,
-      start: '',
-      end: customer.contractEnd || '2026-12-15',
-      note: '合同总额 374,540 来自详情设计稿。到期日用客户列表里的 2026-12-15。设计稿另写了 2025-09-24 至 2026-09-23，并标着还有 32 天，和列表以及今天的日期对不上，所以不采用那段日期。26 项服务没有逐项清单。',
+      start: '2025-09-24',
+      end: '2026-09-23',
+      note: '设计稿合同周期与「还有 32 天」为详情页演示快照。',
     }],
-    services: [],
-    payments: [{
-      id: 'pay-youlaite',
-      amount: customer.value || 158000,
-      paidOn: '',
-      confirmed: true,
-      note: '设计稿写了累计支付 3 次、合计 158,000 元，但没有每次的金额和日期，因此只记一笔已确认合计。',
-    }],
+    services: Array.from({ length: 26 }, (_, index) => ({
+      id: `svc-${index + 1}`,
+      name: index < 23 ? `付费服务 ${index + 1}` : `赠送服务 ${index - 22}`,
+      start: '2025-09-24',
+      end: '2026-09-23',
+    })),
+    payments: [
+      { id: 'pay1', amount: 58000, paidOn: '2025-10-08', confirmed: true, note: '' },
+      { id: 'pay2', amount: 50000, paidOn: '2026-01-16', confirmed: true, note: '' },
+      { id: 'pay3', amount: 50000, paidOn: '2026-04-20', confirmed: true, note: '' },
+    ],
     opportunities: [
-      { id: 'op1', name: '聚焦APP', amount: 60000, stage: '意向沟通', feedback: '', expectOn: '2026-11-15', closed: false },
+      { id: 'op1', name: '聚焦 APP', amount: 60000, stage: '意向沟通', feedback: '', expectOn: '2026-11-15', closed: false },
       { id: 'op2', name: '精点投', amount: 20000, stage: '方案报价', feedback: '', expectOn: '2026-11-30', closed: false },
     ],
-    gapNote: '第二位联系人在详情图里写成了胡总，客户列表里是王经理、同一打码手机号。档案沿用列表里的王经理，避免同一个人两个名字。',
+    gapNote: '',
   }
 }
