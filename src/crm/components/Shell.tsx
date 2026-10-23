@@ -1,22 +1,17 @@
 import { useEffect, useRef } from 'react'
 import {
   Bell,
-  Bot,
   CalendarPlus,
   ChevronDown,
   Clock3,
   Download,
-  Folder,
   LayoutDashboard,
   Menu,
   PieChart,
   Plus,
-  RefreshCw,
   Search,
   Settings,
   Sparkles,
-  Target,
-  TrendingUp,
   Upload,
   Users,
   Zap,
@@ -32,15 +27,9 @@ import { Workbench } from '@/crm/components/Workbench'
 
 const NAV: { id: NavId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'workbench', label: '工作台', icon: LayoutDashboard },
-  { id: 'customers', label: '客户管理', icon: Users },
-  { id: 'followups', label: '跟进管理', icon: Clock3 },
-  { id: 'reactivate', label: '客户盘活', icon: Target },
-  { id: 'renewal', label: '续约管理', icon: RefreshCw },
-  { id: 'addon', label: '加购商机', icon: TrendingUp },
-  { id: 'reports', label: '数据报表', icon: PieChart },
-  { id: 'ai', label: 'AI销售助手', icon: Bot },
-  { id: 'team', label: '团队协作', icon: Users },
-  { id: 'files', label: '文件中心', icon: Folder },
+  { id: 'customers', label: '客户中心', icon: Users },
+  { id: 'followups', label: '待办日程', icon: Clock3 },
+  { id: 'reports', label: '数据分析', icon: PieChart },
   { id: 'settings', label: '系统设置', icon: Settings },
 ]
 
@@ -97,7 +86,7 @@ export function Shell() {
           <img src={logo} alt="" />
           <div>
             <strong>MIC Sales CRM</strong>
-            <span>中国制造网销售客户管理系统</span>
+            <span>中国制造网·个人销售管理系统</span>
           </div>
         </div>
         <div className="mic-demo-pill">演示数据</div>
@@ -137,7 +126,7 @@ export function Shell() {
               ref={searchRef}
               data-testid="crm-search"
               value={crm.search}
-              placeholder={crm.nav === 'customers' ? '搜索公司名称、联系人、电话、微信、主营产品、行业...' : '搜索客户名称、联系人、电话、行业、标签、合同编号...'}
+              placeholder={crm.nav === 'customers' ? '搜索公司名称、联系人、电话、微信、主营产品、行业、地区...' : '搜索客户名称、联系人、电话、行业、标签、合同编号...'}
               aria-label="搜索演示客户"
               onChange={(event) => crm.setSearch(event.target.value)}
               onFocus={() => crm.setSearchOpen(true)}

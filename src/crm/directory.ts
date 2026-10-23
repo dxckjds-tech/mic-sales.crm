@@ -14,12 +14,15 @@ type Seed = {
   contractEnd: string
   accountStatus: AccountStatus
   nextFollow: string
+  lastFollow?: string
   nameTag?: string
   source?: string
   website?: string
   mark: Mark
   contacts?: CustomerContact[]
   plans?: CustomerPlan[]
+  /** 需要跟进页签样本 */
+  needsFollow?: boolean
 }
 
 function row(seed: Seed): Customer {
@@ -48,11 +51,13 @@ function row(seed: Seed): Customer {
     contractEnd: seed.contractEnd,
     accountStatus: seed.accountStatus,
     nextFollow: seed.nextFollow,
+    lastFollow: seed.lastFollow,
     source: seed.source ?? '',
     website: seed.website ?? '',
     nameTag: seed.nameTag,
     contacts: seed.contacts ?? [],
     plans: seed.plans ?? [],
+    needsFollow: seed.needsFollow,
   }
 }
 
@@ -72,10 +77,12 @@ export const DIRECTORY_CUSTOMERS: Customer[] = [
     contractEnd: '2026-12-15',
     accountStatus: '即将到期',
     nextFollow: '10-25',
+    lastFollow: '10-18 电话',
     nameTag: '重点客户',
     source: '主动开发',
     website: '-',
     mark: 'blue',
+    needsFollow: true,
     contacts: [
       { id: 'c-shi', name: '史总', role: '总经理', phone: '138-****-8888' },
       { id: 'c-wang', name: '王经理', role: '业务负责人', phone: '136-****-6666' },
@@ -95,7 +102,9 @@ export const DIRECTORY_CUSTOMERS: Customer[] = [
     contractEnd: '2027-03-20',
     accountStatus: '正常客户',
     nextFollow: '10-24',
+    lastFollow: '10-20 微信',
     mark: 'green',
+    needsFollow: true,
   }),
   row({
     id: 'ningbo-zhenglv',
@@ -110,8 +119,10 @@ export const DIRECTORY_CUSTOMERS: Customer[] = [
     contractEnd: '2026-11-30',
     accountStatus: '即将到期',
     nextFollow: '10-22',
+    lastFollow: '10-19 拜访',
     nameTag: '近期跟进',
     mark: 'orange',
+    needsFollow: true,
   }),
   row({
     id: 'dir-hangzhou',
@@ -126,6 +137,7 @@ export const DIRECTORY_CUSTOMERS: Customer[] = [
     contractEnd: '2027-05-18',
     accountStatus: '正常客户',
     nextFollow: '10-28',
+    lastFollow: '10-16 电话',
     mark: 'blue',
   }),
   row({
@@ -141,6 +153,7 @@ export const DIRECTORY_CUSTOMERS: Customer[] = [
     contractEnd: '2026-08-20',
     accountStatus: '沉睡客户',
     nextFollow: '10-30',
+    lastFollow: '09-12 邮件',
     nameTag: '沉睡提醒',
     mark: 'red',
   }),
@@ -157,6 +170,7 @@ export const DIRECTORY_CUSTOMERS: Customer[] = [
     contractEnd: '2027-01-10',
     accountStatus: '加购机会',
     nextFollow: '10-26',
+    lastFollow: '10-15 微信',
     mark: 'green',
   }),
   row({
@@ -172,6 +186,7 @@ export const DIRECTORY_CUSTOMERS: Customer[] = [
     contractEnd: '2026-09-15',
     accountStatus: '沉睡客户',
     nextFollow: '10-29',
+    lastFollow: '09-28 电话',
     mark: 'orange',
   }),
   row({
@@ -187,7 +202,9 @@ export const DIRECTORY_CUSTOMERS: Customer[] = [
     contractEnd: '2026-12-05',
     accountStatus: '即将到期',
     nextFollow: '10-23',
+    lastFollow: '10-17 拜访',
     mark: 'blue',
+    needsFollow: true,
   }),
   row({
     id: 'dir-taizhou',
@@ -202,6 +219,7 @@ export const DIRECTORY_CUSTOMERS: Customer[] = [
     contractEnd: '2027-04-12',
     accountStatus: '正常客户',
     nextFollow: '10-27',
+    lastFollow: '10-14 微信',
     mark: 'green',
   }),
   row({
@@ -217,15 +235,41 @@ export const DIRECTORY_CUSTOMERS: Customer[] = [
     contractEnd: '2026-10-18',
     accountStatus: '沉睡客户',
     nextFollow: '10-31',
+    lastFollow: '09-05 电话',
     mark: 'red',
   }),
 ]
 
+/** 客户中心页签与指标卡上的设计稿汇总数字 */
 export const DIRECTORY_TAB_COUNTS = {
   all: 286,
-  正常客户: 156,
-  沉睡客户: 48,
-  即将到期: 18,
-  高价值客户: 64,
-  加购机会: 36,
+  follow: 24,
+  reactivate: 48,
+  opportunity: 36,
+  highValue: 64,
+  dueSoon: 18,
+  dormant: 48,
+  addonValue: 260000,
 } as const
+
+export const DIRECTORY_LEVEL_STATS = [
+  { label: '高价值客户', value: 22, color: '#f04438' },
+  { label: '重要客户', value: 30, color: '#2f6bff' },
+  { label: '潜力客户', value: 24, color: '#12b76a' },
+  { label: '普通客户', value: 17, color: '#f79009' },
+  { label: '沉睡客户', value: 7, color: '#9b8afb' },
+] as const
+
+export const DIRECTORY_FEED = [
+  { id: 'df1', at: '10-22 16:30', channel: '电话', name: '宁波优来特进出口有限公司', text: '沟通续约方案，客户表示认可' },
+  { id: 'df2', at: '10-21 14:20', channel: '微信', name: '慈溪长城制刷有限公司', text: '已发送新品资料，等待反馈' },
+  { id: 'df3', at: '10-20 10:00', channel: '拜访', name: '杭州优创五金有限公司', text: '工厂实地考察，确认合作意向' },
+  { id: 'df4', at: '10-18 11:15', channel: '邮件', name: '苏州精丰机械有限公司', text: '发送唤醒方案，约下周电话' },
+] as const
+
+export const DIRECTORY_TODAY_TODOS = [
+  { id: 'dt1', time: '10:00', title: '电话沟通 · 宁波优来特', done: false },
+  { id: 'dt2', time: '11:00', title: '微信沟通 · 慈溪长城制刷', done: false },
+  { id: 'dt3', time: '14:30', title: '拜访客户 · 杭州优创五金', done: false },
+  { id: 'dt4', time: '16:00', title: '发送方案 · 苏州精丰机械', done: true },
+] as const

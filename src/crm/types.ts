@@ -59,6 +59,8 @@ export type Customer = {
   mark: Mark
   /** 客户管理页设计稿样本。工作台样本不带这个标记。 */
   directory?: boolean
+  /** 「需要跟进」页签 */
+  needsFollow?: boolean
   province?: string
   city?: string
   products?: string
@@ -69,6 +71,8 @@ export type Customer = {
   contractEnd?: string
   accountStatus?: AccountStatus
   nextFollow?: string
+  /** 上次跟进，设计稿文案如「10-18 电话」 */
+  lastFollow?: string
   source?: string
   website?: string
   nameTag?: string
