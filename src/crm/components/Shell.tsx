@@ -98,7 +98,7 @@ export function Shell() {
             </button>
           ))}
         </nav>
-        {crm.nav === 'customers' ? <GoalCard /> : (
+        {crm.nav === 'customers' || crm.nav === 'followups' ? <GoalCard /> : (
           <div className="mic-side-user">
             <img src={avatar} alt="" />
             <div className="grow">
@@ -153,13 +153,13 @@ export function Shell() {
               <Plus size={16} />
               新增客户
             </button>
-            {crm.nav === 'customers' ? (
+            {crm.nav === 'customers' || crm.nav === 'followups' ? (
               <>
-                <button type="button" className="mic-ghost" onClick={() => crm.importCustomerView()}>
+                <button type="button" className="mic-ghost" onClick={() => crm.nav === 'customers' ? crm.importCustomerView() : crm.pushToast('日程导入尚未接入（演示）')}>
                   <Upload size={16} />
                   <span>导入Excel</span>
                 </button>
-                <button type="button" className="mic-ghost" onClick={() => crm.exportCustomerView()}>
+                <button type="button" className="mic-ghost" onClick={() => crm.nav === 'customers' ? crm.exportCustomerView() : crm.pushToast('日程导出尚未接入（演示）')}>
                   <Download size={16} />
                   <span>导出Excel</span>
                 </button>
