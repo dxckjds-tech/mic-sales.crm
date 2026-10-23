@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import {
+  AlertTriangle,
   ArrowUpRight,
+  Bot,
   CalendarDays,
   ChevronLeft,
   Clock3,
@@ -12,10 +14,16 @@ import {
   Pencil,
   Phone,
   Plus,
-  Users,
+  Sparkles,
   Wallet,
 } from 'lucide-react'
-import building from '@/assets/crm/hero-building.png'
+import building from '@/assets/crm/detail-building.png'
+import avatarHu from '@/assets/crm/contact-hu.png'
+import avatarShi from '@/assets/crm/contact-shi.png'
+import visit1 from '@/assets/crm/visit-1.png'
+import visit2 from '@/assets/crm/visit-2.png'
+import visit3 from '@/assets/crm/visit-3.png'
+import visit4 from '@/assets/crm/visit-4.png'
 import { money } from '@/crm/data'
 import { useCrm } from '@/crm/crm-context'
 import {
@@ -136,7 +144,7 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
             <div>
               <dt>客户编号</dt>
               <dd>
-                {record.code || '—'}
+                <b>{record.code || '—'}</b>
                 {customerId === 'youlaite' ? (
                   <span className="cd-mini-tags">
                     <em>制造工厂</em><em>外贸公司</em><em>ISO认证</em>
@@ -144,9 +152,9 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
                 ) : null}
               </dd>
             </div>
-            <div><dt>所属行业</dt><dd>{record.region ? `${record.region.split(/\s+/)[0]} ${record.trade}` : (record.trade || '—')}</dd></div>
+            <div><dt>所属行业</dt><dd>{record.region ? `${record.region.split(/\s+/)[0]} ${record.trade.split('/')[0].trim()}` : (record.trade || '—')}</dd></div>
             <div><dt>合作年限</dt><dd>{record.years ? `${record.years}年` : '—'}</dd></div>
-            <div><dt>客户等级</dt><dd className="hot">{levelText(customer.level)}</dd></div>
+            <div><dt>客户等级</dt><dd><span className="cd-level-pill">{levelText(customer.level)}</span></dd></div>
             <div><dt>客户来源</dt><dd>{record.source || '—'}</dd></div>
             <div><dt>最近跟进</dt><dd>{lastDay || (customerId === 'youlaite' ? '2026-10-22' : '没有记录')}</dd></div>
             <div><dt>下次跟进</dt><dd>{nextDay || '未安排'}</dd></div>
@@ -155,8 +163,8 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
         <div className="cd-actions">
           <button type="button" onClick={() => { setPanel('edit'); setTab('overview') }}><Pencil size={14} /> 编辑</button>
           <button type="button" onClick={() => openFollow('phone')}><Phone size={14} /> 打电话</button>
-          <button type="button" onClick={() => openFollow('wechat')}><MessageCircle size={14} /> 发微信</button>
-          <button type="button" className="mic-primary" onClick={() => openFollow('')}><Plus size={14} /> 添加跟进</button>
+          <button type="button" className="cd-wx" onClick={() => openFollow('wechat')}><MessageCircle size={14} /> 发微信</button>
+          <button type="button" className="mic-primary" onClick={() => openFollow('')}><CalendarDays size={14} /> 添加跟进</button>
           <div className="cust-pop-wrap">
             <button type="button" aria-label="更多操作" onClick={() => setMoreOpen(!moreOpen)}><MoreHorizontal size={16} /></button>
             {moreOpen ? (
@@ -178,12 +186,13 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
           icon={<CalendarDays size={16} />}
           label="当前合同周期"
           value={start && end ? `${start} ~ ${end}` : (end || '—')}
-          foot={remain === null ? '没有到期日' : remain < 0 ? `已过 ${-remain} 天` : `还有 ${remain} 天到期`}
-          warn={remain !== null && remain <= 60}
+          footNode={remain === null ? <small>没有到期日</small> : (
+            <small><span className="cd-due-badge">{remain < 0 ? `已过 ${-remain} 天` : `还有 ${remain} 天到期`}</span></small>
+          )}
         />
-        <MetricIcon tone="cyan" icon={<RenewalRing value={80} />} label="续约预测" value="续约可能性高" foot="建议提前推进" />
-        <MetricIcon tone="green" icon={<ArrowUpRight size={16} />} label="加购潜力" value="高" foot="精点投 / 聚焦APP" />
-        <MetricIcon tone="red" icon={<Clock3 size={16} />} label="沉睡天数" value={sleep === null ? '—' : `${sleep} 天`} foot={lastDay ? `最近沟通 ${lastDay}` : '没有沟通记录'} warn={sleep !== null && sleep >= 30} />
+        <MetricIcon tone="cyan" className="renewal" icon={<RenewalRing value={80} />} label="续约预测" value="续约可能性高" valueTone="good" foot="建议提前推进" />
+        <MetricIcon tone="green" icon={<ArrowUpRight size={16} />} label="加购潜力" value="高" valueTone="good" foot="精点投 / 聚焦APP" />
+        <MetricIcon tone="red" icon={<Clock3 size={16} />} label="沉睡天数" value={sleep === null ? '—' : `${sleep} 天`} foot={lastDay ? `最近沟通 ${lastDay}` : '没有沟通记录'} />
       </section>
 
       <section className="mic-card cd-body">
@@ -237,47 +246,50 @@ function levelText(level?: CustomerLevel) {
 }
 
 function MetricIcon({
-  label, value, foot, warn, tone, icon,
+  label, value, foot, footNode, warn, tone, icon, valueTone, className,
 }: {
   label: string
   value: string
-  foot: string
+  foot?: string
+  footNode?: ReactNode
   warn?: boolean
   tone: string
   icon: ReactNode
+  valueTone?: 'good' | 'warn'
+  className?: string
 }) {
   return (
-    <article className={`mic-card cd-metric tone-${tone}`}>
+    <article className={`mic-card cd-metric tone-${tone}${className ? ` ${className}` : ''}`}>
       <span className="cd-metric-ico" aria-hidden="true">{icon}</span>
       <div>
         <span>{label}</span>
-        <b className={warn ? 'warn' : undefined}>{value}</b>
-        <small className={warn ? 'warn' : undefined}>{foot}</small>
+        <b className={valueTone === 'good' ? 'good' : warn || valueTone === 'warn' ? 'warn' : undefined}>{value}</b>
+        {footNode ?? (foot ? <small className={warn ? 'warn' : undefined}>{foot}</small> : null)}
       </div>
     </article>
   )
 }
 
 function RenewalRing({ value }: { value: number }) {
-  const r = 14
+  const r = 18
   const c = 2 * Math.PI * r
   const offset = c * (1 - value / 100)
   return (
-    <svg className="cd-ring" viewBox="0 0 36 36" width="28" height="28" aria-hidden="true">
-      <circle cx="18" cy="18" r={r} fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="4" />
+    <svg className="cd-ring" viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+      <circle cx="24" cy="24" r={r} fill="none" stroke="#d6e4ff" strokeWidth="5" />
       <circle
-        cx="18"
-        cy="18"
+        cx="24"
+        cy="24"
         r={r}
         fill="none"
-        stroke="#fff"
-        strokeWidth="4"
+        stroke="#2f6bff"
+        strokeWidth="5"
         strokeLinecap="round"
         strokeDasharray={c}
         strokeDashoffset={offset}
-        transform="rotate(-90 18 18)"
+        transform="rotate(-90 24 24)"
       />
-      <text x="18" y="20.5" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="800">{value}%</text>
+      <text x="24" y="27" textAnchor="middle" fill="#2f6bff" fontSize="11" fontWeight="800">{value}%</text>
     </svg>
   )
 }
@@ -297,7 +309,6 @@ function OverviewBoard({
   onDeal: () => void
 }) {
   const crm = useCrm()
-  const [tag, setTag] = useState('')
   const contract = record.contracts[0]
   const rows: [string, ReactNode][] = [
     ['公司名称', record.name],
@@ -328,7 +339,7 @@ function OverviewBoard({
         <section className="cd-panel">
           <header className="cd-panel-hd">
             <b>企业基本信息</b>
-            <button type="button" aria-label="编辑资料" onClick={() => crm.pushToast('请使用顶部「编辑」修改资料')}><Pencil size={14} /></button>
+            <button type="button" className="mic-link" aria-label="编辑资料" onClick={() => crm.pushToast('请使用顶部「编辑」修改资料')}><Pencil size={14} /> 编辑</button>
           </header>
           <dl className="cd-kv">
             {rows.map(([label, value]) => (
@@ -337,23 +348,26 @@ function OverviewBoard({
           </dl>
         </section>
         <section className="cd-panel">
-          <header className="cd-panel-hd"><b>标签管理</b></header>
+          <header className="cd-panel-hd">
+            <b>标签管理</b>
+            <button type="button" className="mic-link" onClick={() => crm.pushToast('标签编辑仍在演示中')}><Pencil size={14} /> 编辑</button>
+          </header>
           <div className="cd-tags">
             {record.tags.map((item) => (
-              <button key={item} type="button" className={`cd-tag t-${hashTone(item)}`} onClick={() => update((current) => ({ ...current, tags: current.tags.filter((tagName) => tagName !== item) }))}>
-                {item} ×
-              </button>
+              <span key={item} className={`cd-tag t-${hashTone(item)}`}>{item}</span>
             ))}
-            <form className="cd-tag-add" onSubmit={(event) => {
-              event.preventDefault()
-              const next = tag.trim()
-              if (next.length < 2) return
-              update((current) => ({ ...current, tags: current.tags.includes(next) ? current.tags : [...current.tags, next] }))
-              setTag('')
-              crm.pushToast('标签已写入本次演示档案')
-            }}>
-              <input aria-label="新标签" value={tag} placeholder="+ 添加标签" onChange={(event) => setTag(event.target.value)} />
-            </form>
+            <button
+              type="button"
+              className="cd-tag-add"
+              onClick={() => {
+                const next = window.prompt('添加标签')?.trim()
+                if (!next || next.length < 2) return
+                update((current) => ({ ...current, tags: current.tags.includes(next) ? current.tags : [...current.tags, next] }))
+                crm.pushToast('标签已写入本次演示档案')
+              }}
+            >
+              + 添加标签
+            </button>
           </div>
         </section>
       </div>
@@ -361,8 +375,10 @@ function OverviewBoard({
       <section className="cd-panel cd-ov-mid">
         <header className="cd-panel-hd">
           <b>最近跟进记录</b>
-          <button type="button" className="mic-primary cd-sm" onClick={onFollow}><Plus size={14} /> 添加跟进</button>
-          <button type="button" className="mic-link" onClick={() => crm.pushToast('更多跟进仍在演示列表中')}>查看更多 &gt;</button>
+          <div className="cd-hd-acts">
+            <button type="button" className="cd-ghost-btn cd-sm" onClick={onFollow}><Plus size={14} /> 添加跟进</button>
+            <button type="button" className="mic-link" onClick={() => crm.pushToast('更多跟进仍在演示列表中')}>查看更多 &gt;</button>
+          </div>
         </header>
         <FollowTimeline record={record} />
       </section>
@@ -376,15 +392,22 @@ function OverviewBoard({
           <div className="cd-contacts">
             {record.contacts.map((person) => (
               <article key={person.id} className="cd-person">
-                <span className="cd-avatar" aria-hidden="true">{person.name.slice(0, 1)}</span>
+                <span className="cd-avatar" aria-hidden="true">
+                  <img src={person.id === 'c-hu' ? avatarHu : avatarShi} alt="" />
+                </span>
                 <div>
                   <b>{person.name}</b>
-                  <span>{person.role}</span>
+                  <span className="cd-role">{person.role}</span>
                   <em className={person.decision ? 'decision' : 'primary'}>{person.decision ? '决策人' : '对接人'}</em>
+                  <div className="cd-person-meta">
+                    <span><Phone size={12} /> {person.phone}</span>
+                    <span className="wx"><MessageCircle size={12} /> 微信：{person.wechat || '—'}</span>
+                  </div>
                 </div>
                 <div className="cd-person-acts">
                   <button type="button" aria-label={`电话 ${person.name}`} onClick={() => crm.pushToast(`演示号码 ${person.phone}`)}><Phone size={14} /></button>
-                  <button type="button" aria-label={`微信 ${person.name}`} onClick={() => crm.pushToast(`演示微信 ${person.wechat || '—'}`)}><MessageCircle size={14} /></button>
+                  <button type="button" className="wx" aria-label={`微信 ${person.name}`} onClick={() => crm.pushToast(`演示微信 ${person.wechat || '—'}`)}><MessageCircle size={14} /></button>
+                  <button type="button" aria-label={`更多 ${person.name}`} onClick={() => crm.pushToast('联系人更多操作尚未接入')}><MoreHorizontal size={14} /></button>
                 </div>
               </article>
             ))}
@@ -396,21 +419,23 @@ function OverviewBoard({
             <b>合同与服务</b>
             <button type="button" className="mic-link" onClick={() => crm.pushToast('合同全文尚未接入')}>查看全部 &gt;</button>
           </header>
-          <dl className="cd-kv compact">
-            <div>
-              <dt>合同周期</dt>
-              <dd>
-                {contract ? `${contract.start || '—'} ~ ${contract.end || '—'}` : '—'}
-                {remain !== null ? <span className="cd-due-pill">{remain < 0 ? `已过 ${-remain} 天` : `还有 ${remain} 天`}</span> : null}
-              </dd>
+          <div className="cd-contract-row">
+            <dl className="cd-kv compact">
+              <div>
+                <dt>合同周期</dt>
+                <dd>
+                  {contract ? `${contract.start || '—'} - ${contract.end || '—'}` : '—'}
+                  {remain !== null ? <span className="cd-due-pill">{remain < 0 ? `(已过 ${-remain} 天)` : `(还有 ${remain} 天)`}</span> : null}
+                </dd>
+              </div>
+              <div><dt>合同金额</dt><dd>{money(contracted || 0)}</dd></div>
+              <div><dt>实付金额</dt><dd>{money(paid || 0)}</dd></div>
+              <div><dt>服务项目</dt><dd>{serviceCount} 项 ({paidServices} 项付费, {Math.max(0, serviceCount - paidServices)} 项赠送)</dd></div>
+            </dl>
+            <div className="cd-two-btns">
+              <button type="button" className="solid" onClick={() => crm.pushToast('查看合同尚未接入（演示）')}>查看合同</button>
+              <button type="button" onClick={() => crm.pushToast('服务明细尚未接入（演示）')}>服务明细</button>
             </div>
-            <div><dt>合同金额</dt><dd>{money(contracted || 0)}</dd></div>
-            <div><dt>实付金额</dt><dd>{money(paid || 0)}</dd></div>
-            <div><dt>服务项目</dt><dd>{serviceCount} 项 ({paidServices} 项付费, {Math.max(0, serviceCount - paidServices)} 项赠送)</dd></div>
-          </dl>
-          <div className="cd-two-btns">
-            <button type="button" onClick={() => crm.pushToast('查看合同尚未接入（演示）')}>查看合同</button>
-            <button type="button" onClick={() => crm.pushToast('服务明细尚未接入（演示）')}>服务明细</button>
           </div>
         </section>
 
@@ -425,7 +450,7 @@ function OverviewBoard({
                 <th>服务名称</th>
                 <th>预计金额</th>
                 <th>商机阶段</th>
-                <th>预计成交</th>
+                <th>预计成交时间</th>
                 <th>操作</th>
               </tr>
             </thead>
@@ -436,30 +461,29 @@ function OverviewBoard({
                   <td>{money(item.amount)}/年</td>
                   <td><span className={`cd-stage ${item.stage}`}>{item.stage}</span></td>
                   <td>{item.expectOn || '—'}</td>
-                  <td><button type="button" className="mic-link" onClick={onFollow}>跟进</button></td>
+                  <td><button type="button" className="cd-deal-follow" onClick={onFollow}>跟进</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <button type="button" className="cd-add-link" onClick={onDeal}>+ 添加商机</button>
         </section>
 
         <section className="cd-panel">
           <header className="cd-panel-hd">
-            <b>AI 客户分析与建议</b>
+            <b><Bot size={14} /> AI 客户分析与建议</b>
             <button type="button" className="mic-link" onClick={() => crm.pushToast('完整报告尚未接入（演示）')}>查看完整报告 &gt;</button>
           </header>
           <div className="cd-ai-cards">
             <article className="blue">
-              <b>续约建议</b>
-              <p>客户续约意向高，建议提前准备续约方案，突出续约效果和增值服务。</p>
+              <b><Sparkles size={14} /> 续约建议</b>
+              <p>客户续约意向高，建议提前准备续约方案，突出服务效果和增值服务。</p>
             </article>
             <article className="green">
-              <b>加购建议</b>
-              <p>客户对聚焦APP感兴趣，可结合行业案例，提高转化率。</p>
+              <b><ArrowUpRight size={14} /> 加购建议</b>
+              <p>客户对聚焦APP有兴趣，可结合行业案例，提高转化率。</p>
             </article>
             <article className="orange">
-              <b>风险提醒</b>
+              <b><AlertTriangle size={14} /> 风险提醒</b>
               <p>合同仅剩 {remain ?? 32} 天，建议 10 月底前完成续约谈判，避免服务中断。</p>
             </article>
           </div>
@@ -469,13 +493,25 @@ function OverviewBoard({
   )
 }
 
+const VISIT_PHOTOS = [
+  { id: 'p1', src: visit1, label: '工厂外景' },
+  { id: 'p2', src: visit2, label: '外立面' },
+  { id: 'p3', src: visit3, label: '产线' },
+  { id: 'p4', src: visit4, label: '更多', more: '+2' },
+]
+
 function FollowTimeline({ record }: { record: CustomerRecord }) {
   const crm = useCrm()
   const rows = [...record.follows].sort((a, b) => b.at.localeCompare(a.at))
   return (
     <ol className="cd-timeline">
       {rows.map((item) => {
-        const Icon = item.channel === 'phone' ? Phone : item.channel === 'wechat' ? MessageCircle : item.channel === 'visit' ? Users : item.channel === 'mail' ? Mail : CalendarDays
+        const Icon = item.channel === 'phone' ? Phone
+          : item.channel === 'wechat' ? MessageCircle
+            : item.channel === 'visit' ? CalendarDays
+              : item.channel === 'mail' ? Mail
+                : CalendarDays
+        const photos = item.photos?.length ? VISIT_PHOTOS : []
         return (
           <li key={item.id}>
             <span className={`cd-tl-dot ${item.channel}`} aria-hidden="true"><Icon size={12} /></span>
@@ -483,14 +519,15 @@ function FollowTimeline({ record }: { record: CustomerRecord }) {
               <header>
                 <time>{item.at}</time>
                 <em>{CHANNELS.find((channel) => channel.id === item.channel)?.label}</em>
-                <span>{item.owner}</span>
+                <span className="cd-owner">{item.owner}</span>
               </header>
               <p>{item.content}</p>
-              {item.photos?.length ? (
+              {photos.length ? (
                 <div className="cd-photos">
-                  {item.photos.map((photo) => (
-                    <button key={photo.id} type="button" className={`cd-photo-thumb ${photo.tone}`} onClick={() => crm.pushToast(`「${photo.label}」仅为设计稿占位图`)}>
-                      {photo.label}
+                  {photos.map((photo) => (
+                    <button key={photo.id} type="button" className="cd-photo-thumb" onClick={() => crm.pushToast(`「${photo.label}」来自设计稿演示图`)}>
+                      <img src={photo.src} alt={photo.label} />
+                      {photo.more ? <span className="cd-more-photo">{photo.more}</span> : null}
                     </button>
                   ))}
                 </div>
@@ -515,10 +552,12 @@ function FollowTimeline({ record }: { record: CustomerRecord }) {
 }
 
 function hashTone(value: string) {
-  const tones = ['orange', 'blue', 'green', 'violet', 'cyan']
-  let sum = 0
-  for (let i = 0; i < value.length; i += 1) sum += value.charCodeAt(i)
-  return tones[sum % tones.length]
+  if (value.includes('高价值') || value.includes('意向')) return 'red'
+  if (value.includes('续约') || value.includes('即将')) return 'orange'
+  if (value.includes('加购')) return 'green'
+  if (value.includes('外贸')) return 'cyan'
+  if (value.includes('净水')) return 'blue'
+  return 'violet'
 }
 
 function Contacts({ record, update, onEdit }: { record: CustomerRecord; update: (recipe: (current: CustomerRecord) => CustomerRecord) => void; onEdit: (person: DetailPerson | null) => void }) {

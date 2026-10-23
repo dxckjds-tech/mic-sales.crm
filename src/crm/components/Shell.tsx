@@ -1,14 +1,19 @@
 import { useEffect, useRef } from 'react'
 import {
   Bell,
+  Bot,
+  BriefcaseBusiness,
+  CalendarDays,
   CalendarPlus,
   ChevronDown,
-  Clock3,
   Download,
+  FileStack,
+  Flame,
   LayoutDashboard,
   Menu,
   PieChart,
   Plus,
+  RefreshCw,
   Search,
   Settings,
   Sparkles,
@@ -18,6 +23,7 @@ import {
 } from 'lucide-react'
 import logo from '@/assets/crm/logo-mark.png'
 import avatar from '@/assets/crm/avatar.png'
+import cityscape from '@/assets/crm/sidebar-city.png'
 import { customerMatches } from '@/crm/data'
 import { useCrm } from '@/crm/crm-context'
 import type { NavId } from '@/crm/types'
@@ -25,10 +31,35 @@ import { CustomerDrawer, CustomerForm, FollowUpForm, TaskForm, Toast } from '@/c
 import { ModulePage } from '@/crm/components/Pages'
 import { Workbench } from '@/crm/components/Workbench'
 
-const NAV: { id: NavId; label: string; icon: typeof LayoutDashboard }[] = [
+type NavItem = { id: NavId; label: string; icon: typeof LayoutDashboard }
+
+/** 客户详情设计稿侧栏（10 项） */
+const DETAIL_NAV: NavItem[] = [
+  { id: 'workbench', label: '工作台', icon: LayoutDashboard },
+  { id: 'customers', label: '客户管理', icon: Users },
+  { id: 'followups', label: '跟进管理', icon: CalendarDays },
+  { id: 'reactivate', label: '客户盘活', icon: Flame },
+  { id: 'renewal', label: '续约管理', icon: RefreshCw },
+  { id: 'addon', label: '加购商机', icon: BriefcaseBusiness },
+  { id: 'reports', label: '数据报表', icon: PieChart },
+  { id: 'ai', label: 'AI销售助手', icon: Bot },
+  { id: 'files', label: '文件中心', icon: FileStack },
+  { id: 'settings', label: '系统设置', icon: Settings },
+]
+
+/** 待办日程页沿用的精简侧栏 */
+const SCHEDULE_NAV: NavItem[] = [
   { id: 'workbench', label: '工作台', icon: LayoutDashboard },
   { id: 'customers', label: '客户中心', icon: Users },
-  { id: 'followups', label: '待办日程', icon: Clock3 },
+  { id: 'followups', label: '待办日程', icon: CalendarDays },
+  { id: 'reports', label: '数据分析', icon: PieChart },
+  { id: 'settings', label: '系统设置', icon: Settings },
+]
+
+const DEFAULT_NAV: NavItem[] = [
+  { id: 'workbench', label: '工作台', icon: LayoutDashboard },
+  { id: 'customers', label: '客户中心', icon: Users },
+  { id: 'followups', label: '待办日程', icon: CalendarDays },
   { id: 'reports', label: '数据分析', icon: PieChart },
   { id: 'settings', label: '系统设置', icon: Settings },
 ]
@@ -59,6 +90,10 @@ export function Shell() {
   const crm = useCrm()
   const searchRef = useRef<HTMLInputElement>(null)
   const hits = crm.search.trim() ? crm.customers.filter((item) => customerMatches(item, crm.search)) : []
+  const detailChrome = Boolean(crm.detailId) || crm.nav === 'customers'
+  const scheduleChrome = crm.nav === 'followups' && !crm.detailId
+  const navItems = detailChrome ? DETAIL_NAV : scheduleChrome ? SCHEDULE_NAV : DEFAULT_NAV
+  const hideDemo = detailChrome || scheduleChrome
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -79,7 +114,7 @@ export function Shell() {
   }, [crm])
 
   return (
-    <div className="mic-app">
+    <div className={`mic-app${detailChrome ? ' mic-detail-chrome' : ''}`}>
       {crm.mobileNav ? <button className="mic-scrim" aria-label="关闭导航" onClick={() => crm.setMobileNav(false)} /> : null}
       <aside className={crm.mobileNav ? 'mic-side open' : 'mic-side'} onMouseDown={() => crm.setSearchOpen(false)}>
         <div className="mic-brand">
@@ -89,16 +124,29 @@ export function Shell() {
             <span>中国制造网·个人销售管理系统</span>
           </div>
         </div>
-        {crm.nav === 'followups' ? null : <div className="mic-demo-pill">演示数据</div>}
+        {hideDemo ? null : <div className="mic-demo-pill">演示数据</div>}
         <nav className="mic-nav" aria-label="主导航">
-          {NAV.map((item) => (
-            <button key={item.id} type="button" className={crm.nav === item.id ? 'active' : undefined} onClick={() => crm.setNav(item.id)}>
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={crm.nav === item.id ? 'active' : undefined}
+              onClick={() => {
+                if (item.id !== 'customers') crm.closeDetail()
+                crm.setNav(item.id)
+              }}
+            >
               <item.icon size={18} />
               {item.label}
             </button>
           ))}
         </nav>
-        {crm.nav === 'customers' || crm.nav === 'followups' ? <GoalCard /> : (
+        {detailChrome || scheduleChrome ? (
+          <>
+            <GoalCard />
+            {detailChrome ? <img className="mic-side-city" src={cityscape} alt="" aria-hidden="true" /> : null}
+          </>
+        ) : (
           <div className="mic-side-user">
             <img src={avatar} alt="" />
             <div className="grow">
@@ -126,14 +174,16 @@ export function Shell() {
               ref={searchRef}
               data-testid="crm-search"
               value={crm.search}
-              placeholder={crm.nav === 'customers' || crm.nav === 'followups'
-                ? '搜索公司名称、联系人、电话、微信、主营产品、行业、地区...'
-                : '搜索客户名称、联系人、电话、行业、标签、合同编号...'}
+              placeholder={detailChrome
+                ? '搜索公司名称、联系人、电话、微信、主营产品、行业等...'
+                : scheduleChrome
+                  ? '搜索公司名称、联系人、电话、微信、主营产品、行业、地区...'
+                  : '搜索客户名称、联系人、电话、行业、标签、合同编号...'}
               aria-label="搜索演示客户"
               onChange={(event) => crm.setSearch(event.target.value)}
               onFocus={() => crm.setSearchOpen(true)}
             />
-            {crm.nav === 'followups' ? null : <span className="mic-kbd">⌘K</span>}
+            {hideDemo ? null : <span className="mic-kbd">⌘K</span>}
             {crm.searchOpen && crm.search.trim() ? (
               <div className="mic-suggest" data-testid="search-results">
                 {hits.length === 0 ? <div className="empty">没有匹配的演示客户</div> : null}
@@ -155,13 +205,13 @@ export function Shell() {
               <Plus size={16} />
               新增客户
             </button>
-            {crm.nav === 'customers' || crm.nav === 'followups' ? (
+            {detailChrome || scheduleChrome ? (
               <>
-                <button type="button" className="mic-ghost" onClick={() => crm.nav === 'customers' ? crm.importCustomerView() : crm.pushToast('日程导入尚未接入（演示）')}>
+                <button type="button" className="mic-ghost" onClick={() => detailChrome ? crm.importCustomerView() : crm.pushToast('日程导入尚未接入（演示）')}>
                   <Upload size={16} />
                   <span>导入Excel</span>
                 </button>
-                <button type="button" className="mic-ghost" onClick={() => crm.nav === 'customers' ? crm.exportCustomerView() : crm.pushToast('日程导出尚未接入（演示）')}>
+                <button type="button" className="mic-ghost" onClick={() => detailChrome ? crm.exportCustomerView() : crm.pushToast('日程导出尚未接入（演示）')}>
                   <Download size={16} />
                   <span>导出Excel</span>
                 </button>
@@ -220,7 +270,7 @@ export function Shell() {
           ) : null}
         </header>
         <main className="mic-scroll" onMouseDown={() => crm.setSearchOpen(false)}>
-          {crm.nav === 'followups' ? null : (
+          {hideDemo ? null : (
             <div className="mic-banner">
               <b>演示数据</b>
               <span>客户名称、指标和跟进都来自设计稿样本，不是真实客户，也不会提交到任何平台。</span>
