@@ -89,7 +89,7 @@ export function Shell() {
             <span>中国制造网·个人销售管理系统</span>
           </div>
         </div>
-        <div className="mic-demo-pill">演示数据</div>
+        {crm.nav === 'followups' ? null : <div className="mic-demo-pill">演示数据</div>}
         <nav className="mic-nav" aria-label="主导航">
           {NAV.map((item) => (
             <button key={item.id} type="button" className={crm.nav === item.id ? 'active' : undefined} onClick={() => crm.setNav(item.id)}>
@@ -126,12 +126,14 @@ export function Shell() {
               ref={searchRef}
               data-testid="crm-search"
               value={crm.search}
-              placeholder={crm.nav === 'customers' ? '搜索公司名称、联系人、电话、微信、主营产品、行业、地区...' : '搜索客户名称、联系人、电话、行业、标签、合同编号...'}
+              placeholder={crm.nav === 'customers' || crm.nav === 'followups'
+                ? '搜索公司名称、联系人、电话、微信、主营产品、行业、地区...'
+                : '搜索客户名称、联系人、电话、行业、标签、合同编号...'}
               aria-label="搜索演示客户"
               onChange={(event) => crm.setSearch(event.target.value)}
               onFocus={() => crm.setSearchOpen(true)}
             />
-            <span className="mic-kbd">⌘K</span>
+            {crm.nav === 'followups' ? null : <span className="mic-kbd">⌘K</span>}
             {crm.searchOpen && crm.search.trim() ? (
               <div className="mic-suggest" data-testid="search-results">
                 {hits.length === 0 ? <div className="empty">没有匹配的演示客户</div> : null}
@@ -218,10 +220,12 @@ export function Shell() {
           ) : null}
         </header>
         <main className="mic-scroll" onMouseDown={() => crm.setSearchOpen(false)}>
-          <div className="mic-banner">
-            <b>演示数据</b>
-            <span>客户名称、指标和跟进都来自设计稿样本，不是真实客户，也不会提交到任何平台。</span>
-          </div>
+          {crm.nav === 'followups' ? null : (
+            <div className="mic-banner">
+              <b>演示数据</b>
+              <span>客户名称、指标和跟进都来自设计稿样本，不是真实客户，也不会提交到任何平台。</span>
+            </div>
+          )}
           {crm.nav === 'workbench' ? <Workbench /> : <ModulePage />}
         </main>
       </div>
