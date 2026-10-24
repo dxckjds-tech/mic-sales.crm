@@ -1,3 +1,4 @@
+import {ModuleEditor} from './ModuleEditor'
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import {
   AlertTriangle,
@@ -15,7 +16,9 @@ import {
   Phone,
   Plus,
   Sparkles,
-  Wallet,
+  CircleDollarSign,
+  ClipboardList,
+  TrendingUp,
 } from 'lucide-react'
 import building from '@/assets/crm/detail-building.png'
 import avatarHu from '@/assets/crm/contact-hu.png'
@@ -75,6 +78,7 @@ const DETAIL_TODAY = '2026-08-22'
 
 export function CustomerDetail({ customerId }: { customerId: string }) {
   const crm = useCrm()
+  const returnToList = () => location.pathname.endsWith('/app.html') ? crm.closeDetail() : location.assign('/customers.html')
   const customer = crm.customers.find((item) => item.id === customerId)
   const [, setVersion] = useState(0)
   const [tab, setTab] = useState<TabId>('overview')
@@ -88,7 +92,7 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
   if (!customer) {
     return (
       <div className="cd">
-        <button type="button" className="cd-back" onClick={crm.closeDetail}><ChevronLeft size={16} /> 返回客户列表</button>
+        <button type="button" className="cd-back" onClick={returnToList}><ChevronLeft size={16} /> 返回客户列表</button>
         <p className="mic-note">没有找到这个演示客户。</p>
       </div>
     )
@@ -127,7 +131,7 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
 
   return (
     <div className="cd" data-testid="customer-detail-page">
-      <button type="button" className="cd-back" onClick={crm.closeDetail}><ChevronLeft size={16} /> 返回客户列表</button>
+      <button type="button" className="cd-back" onClick={returnToList}><ChevronLeft size={16} /> 返回客户列表</button>
 
       <section className="mic-card cd-head">
         <div className="cd-photo" aria-hidden="true">
@@ -171,7 +175,7 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
               <div className="cust-pop cd-more">
                 <button type="button" onClick={() => { void navigator.clipboard?.writeText(record.code); crm.pushToast('客户编号已复制'); setMoreOpen(false) }}>复制客户编号</button>
                 <button type="button" onClick={() => { setPanel('task'); setMoreOpen(false) }}>创建任务</button>
-                <button type="button" onClick={crm.closeDetail}>返回客户列表</button>
+                <button type="button" onClick={returnToList}>返回客户列表</button>
               </div>
             ) : null}
           </div>
@@ -179,8 +183,8 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
       </section>
 
       <section className="cd-metrics" aria-label="经营数据">
-        <MetricIcon tone="blue" icon={<Wallet size={16} />} label="历史实付金额" value={money(paid || 158000)} foot={`累计支付 ${payCount || 3} 次`} />
-        <MetricIcon tone="violet" icon={<FileText size={16} />} label="合同总金额" value={money(contracted || 374540)} foot={`含${serviceCount}项服务`} />
+        <MetricIcon tone="blue" icon={<CircleDollarSign size={24} />} label="历史实付金额" value={money(paid || 158000)} foot={`累计支付 ${payCount || 3} 次`} />
+        <MetricIcon tone="violet" icon={<ClipboardList size={24} />} label="合同总金额" value={money(contracted || 374540)} foot={`含${serviceCount}项服务`} />
         <MetricIcon
           tone="orange"
           icon={<CalendarDays size={16} />}
@@ -191,7 +195,7 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
           )}
         />
         <MetricIcon tone="cyan" className="renewal" icon={<RenewalRing value={80} />} label="续约预测" value="续约可能性高" valueTone="good" foot="建议提前推进" />
-        <MetricIcon tone="green" icon={<ArrowUpRight size={16} />} label="加购潜力" value="高" valueTone="good" foot="精点投 / 聚焦APP" />
+        <MetricIcon tone="green" icon={<TrendingUp size={24} />} label="加购潜力" value="高" valueTone="good" foot="精点投 / 聚焦APP" />
         <MetricIcon tone="red" icon={<Clock3 size={16} />} label="沉睡天数" value={sleep === null ? '—' : `${sleep} 天`} foot={lastDay ? `最近沟通 ${lastDay}` : '没有沟通记录'} />
       </section>
 
@@ -221,6 +225,7 @@ export function CustomerDetail({ customerId }: { customerId: string }) {
             onFollow={() => openFollow('')}
             onContact={() => { setContactId(null); setPanel('contact') }}
             onDeal={() => setPanel('deal')}
+            onEdit={() => {setPanel('edit');setTab('overview')}}
           />
         ) : null}
         {tab === 'contacts' ? <Contacts record={record} update={update} onEdit={(person) => { setContactId(person?.id ?? null); setPanel('contact') }} /> : null}
@@ -295,7 +300,7 @@ function RenewalRing({ value }: { value: number }) {
 }
 
 function OverviewBoard({
-  record, update, remain, paid, contracted, serviceCount, paidServices, onFollow, onContact, onDeal,
+  record, update, remain, paid, contracted, serviceCount, paidServices, onFollow, onContact, onDeal, onEdit,
 }: {
   record: CustomerRecord
   update: (recipe: (current: CustomerRecord) => CustomerRecord) => void
@@ -307,8 +312,10 @@ function OverviewBoard({
   onFollow: () => void
   onContact: () => void
   onDeal: () => void
+  onEdit: () => void
 }) {
   const crm = useCrm()
+  const [editingModule, setEditingModule] = useState('')
   const contract = record.contracts[0]
   const rows: [string, ReactNode][] = [
     ['公司名称', record.name],
@@ -335,11 +342,12 @@ function OverviewBoard({
 
   return (
     <div className="cd-overview">
+      {editingModule && <ModuleEditor key={editingModule} module={editingModule} record={record} update={update} onClose={() => setEditingModule('')} />}
       <div className="cd-ov-left">
         <section className="cd-panel">
           <header className="cd-panel-hd">
             <b>企业基本信息</b>
-            <button type="button" className="mic-link" aria-label="编辑资料" onClick={() => crm.pushToast('请使用顶部「编辑」修改资料')}><Pencil size={14} /> 编辑</button>
+            <button type="button" className="mic-link" aria-label="编辑资料" onClick={onEdit}><Pencil size={14} /> 编辑</button>
           </header>
           <dl className="cd-kv">
             {rows.map(([label, value]) => (
@@ -350,7 +358,7 @@ function OverviewBoard({
         <section className="cd-panel">
           <header className="cd-panel-hd">
             <b>标签管理</b>
-            <button type="button" className="mic-link" onClick={() => crm.pushToast('标签编辑仍在演示中')}><Pencil size={14} /> 编辑</button>
+            <button type="button" className="mic-link" onClick={() => setEditingModule('tags')}><Pencil size={14} /> 编辑</button>
           </header>
           <div className="cd-tags">
             {record.tags.map((item) => (
@@ -374,7 +382,7 @@ function OverviewBoard({
 
       <section className="cd-panel cd-ov-mid">
         <header className="cd-panel-hd">
-          <b>最近跟进记录</b>
+          <b>最近跟进记录</b><button type="button" className="module-edit" aria-label="编辑最近跟进记录" onClick={() => setEditingModule('follows')}><Pencil size={14}/> 编辑</button>
           <div className="cd-hd-acts">
             <button type="button" className="cd-ghost-btn cd-sm" onClick={onFollow}><Plus size={14} /> 添加跟进</button>
             <button type="button" className="mic-link" onClick={() => crm.pushToast('更多跟进仍在演示列表中')}>查看更多 &gt;</button>
@@ -386,7 +394,7 @@ function OverviewBoard({
       <div className="cd-ov-right">
         <section className="cd-panel">
           <header className="cd-panel-hd">
-            <b>联系人信息</b>
+            <b>联系人信息</b><button type="button" className="module-edit" aria-label="编辑联系人信息" onClick={() => setEditingModule('contacts')}><Pencil size={14}/> 编辑</button>
             <button type="button" className="mic-link" onClick={onContact}>查看更多 &gt;</button>
           </header>
           <div className="cd-contacts">
@@ -416,7 +424,7 @@ function OverviewBoard({
 
         <section className="cd-panel">
           <header className="cd-panel-hd">
-            <b>合同与服务</b>
+            <b>合同与服务</b><button type="button" className="module-edit" aria-label="编辑合同与服务" onClick={() => setEditingModule('contract')}><Pencil size={14}/> 编辑</button>
             <button type="button" className="mic-link" onClick={() => crm.pushToast('合同全文尚未接入')}>查看全部 &gt;</button>
           </header>
           <div className="cd-contract-row">
@@ -441,7 +449,7 @@ function OverviewBoard({
 
         <section className="cd-panel">
           <header className="cd-panel-hd">
-            <b>加购商机</b>
+            <b>加购商机</b><button type="button" className="module-edit" aria-label="编辑加购商机" onClick={() => setEditingModule('opportunities')}><Pencil size={14}/> 编辑</button>
             <button type="button" className="mic-link" onClick={onDeal}>+ 新增商机</button>
           </header>
           <table className="cd-deal-table">
@@ -673,6 +681,7 @@ function AiPanel({ remain }: { remain: number | null }) {
 function EditForm({ customer, record, update, onClose }: { customer: Customer; record: CustomerRecord; update: (recipe: (current: CustomerRecord) => CustomerRecord) => void; onClose: () => void }) {
   const crm = useCrm()
   const [name, setName] = useState(record.name)
+  const [extra, setExtra] = useState({englishName:record.englishName,creditCode:record.creditCode,companyType:record.companyType,foundedOn:record.foundedOn,staffSize:record.staffSize,address:record.address})
   const [products, setProducts] = useState(record.products)
   const [trade, setTrade] = useState(record.trade)
   const [region, setRegion] = useState(record.region)
@@ -689,6 +698,7 @@ function EditForm({ customer, record, update, onClose }: { customer: Customer; r
     const yearNumber = Number(years)
     if (years && (Number.isNaN(yearNumber) || yearNumber < 0)) return setError('合作年限需要是数字')
     const next = {
+      ...extra,
       name: name.trim(),
       products: products.trim(),
       trade: trade.trim(),
@@ -719,17 +729,18 @@ function EditForm({ customer, record, update, onClose }: { customer: Customer; r
 
   return (
     <form className="cd-form" onSubmit={submit}>
-      <input aria-label="公司名称" value={name} onChange={(event) => setName(event.target.value)} />
-      <input aria-label="主营产品" value={products} placeholder="主营产品" onChange={(event) => setProducts(event.target.value)} />
-      <input aria-label="所属行业" value={trade} placeholder="所属行业" onChange={(event) => setTrade(event.target.value)} />
-      <input aria-label="所属地区" value={region} placeholder="省 市" onChange={(event) => setRegion(event.target.value)} />
-      <input aria-label="客户来源" value={source} placeholder="客户来源" onChange={(event) => setSource(event.target.value)} />
-      <input aria-label="公司官网" value={website} placeholder="公司官网" onChange={(event) => setWebsite(event.target.value)} />
-      <input aria-label="合作年限" value={years} placeholder="合作年限" onChange={(event) => setYears(event.target.value)} />
-      <select aria-label="客户等级" value={level} onChange={(event) => setLevel(event.target.value as CustomerLevel)}>
+      <label className="cd-field"><span>公司名称</span><input aria-label="公司名称" value={name} onChange={(event) => setName(event.target.value)} /></label>
+      {([['englishName','英文名称'],['creditCode','统一社会信用代码'],['companyType','公司类型'],['foundedOn','成立时间'],['staffSize','公司规模'],['address','公司地址']] as const).map(([key,label]) => <label className="cd-field" key={key}><span>{label}</span><input aria-label={label} type={key==='foundedOn'?'date':'text'} value={extra[key]} onChange={e=>setExtra({...extra,[key]:e.target.value})}/></label>)}
+      <label className="cd-field"><span>主营产品</span><input aria-label="主营产品" value={products} placeholder="主营产品" onChange={(event) => setProducts(event.target.value)} /></label>
+      <label className="cd-field"><span>所属行业</span><input aria-label="所属行业" value={trade} placeholder="所属行业" onChange={(event) => setTrade(event.target.value)} /></label>
+      <label className="cd-field"><span>所属地区</span><input aria-label="所属地区" value={region} placeholder="省 市" onChange={(event) => setRegion(event.target.value)} /></label>
+      <label className="cd-field"><span>客户来源</span><input aria-label="客户来源" value={source} placeholder="客户来源" onChange={(event) => setSource(event.target.value)} /></label>
+      <label className="cd-field"><span>公司官网</span><input aria-label="公司官网" value={website} placeholder="公司官网" onChange={(event) => setWebsite(event.target.value)} /></label>
+      <label className="cd-field"><span>合作年限</span><input aria-label="合作年限" value={years} placeholder="合作年限" onChange={(event) => setYears(event.target.value)} /></label>
+      <label className="cd-field"><span>客户等级</span><select aria-label="客户等级" value={level} onChange={(event) => setLevel(event.target.value as CustomerLevel)}>
         <option>高价值</option><option>重要客户</option><option>潜力客户</option>
-      </select>
-      <textarea aria-label="备注" value={remark} placeholder="备注" onChange={(event) => setRemark(event.target.value)} />
+      </select></label>
+      <label className="cd-field"><span>备注</span><textarea aria-label="备注" value={remark} placeholder="备注" onChange={(event) => setRemark(event.target.value)} /></label>
       {error ? <span className="mic-err" role="alert">{error}</span> : null}
       <div className="cd-form-actions"><button type="button" onClick={onClose}>取消</button><button type="submit" className="mic-primary">保存</button></div>
     </form>
@@ -761,14 +772,14 @@ function FollowForm({ customerId, initialChannel, update, onClose }: { customerI
 
   return (
     <form className="cd-form" onSubmit={submit}>
-      <select aria-label="跟进方式" value={channel} onChange={(event) => setChannel(event.target.value as DetailChannel | '')}>
+      <label className="cd-field"><span>跟进方式</span><select aria-label="跟进方式" value={channel} onChange={(event) => setChannel(event.target.value as DetailChannel | '')}>
         <option value="">跟进方式</option>
         {CHANNELS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-      </select>
-      <input type="datetime-local" aria-label="跟进时间" value={at} onChange={(event) => setAt(event.target.value)} />
-      <textarea aria-label="跟进内容" value={content} placeholder="跟进内容" onChange={(event) => setContent(event.target.value)} />
-      <input aria-label="客户反馈" value={feedback} placeholder="客户反馈，可空" onChange={(event) => setFeedback(event.target.value)} />
-      <input aria-label="下一步计划" value={nextStep} placeholder="下一步计划，可空" onChange={(event) => setNextStep(event.target.value)} />
+      </select></label>
+      <label className="cd-field"><span>跟进时间</span><input type="datetime-local" aria-label="跟进时间" value={at} onChange={(event) => setAt(event.target.value)} /></label>
+      <label className="cd-field"><span>跟进内容</span><textarea aria-label="跟进内容" value={content} placeholder="跟进内容" onChange={(event) => setContent(event.target.value)} /></label>
+      <label className="cd-field"><span>客户反馈</span><input aria-label="客户反馈" value={feedback} placeholder="客户反馈，可空" onChange={(event) => setFeedback(event.target.value)} /></label>
+      <label className="cd-field"><span>下一步计划</span><input aria-label="下一步计划" value={nextStep} placeholder="下一步计划，可空" onChange={(event) => setNextStep(event.target.value)} /></label>
       {error ? <span className="mic-err" role="alert">{error}</span> : null}
       <div className="cd-form-actions"><button type="button" onClick={onClose}>取消</button><button type="submit" className="mic-primary">保存跟进</button></div>
     </form>
@@ -790,8 +801,8 @@ function TaskForm({ update, onClose }: { update: (recipe: (current: CustomerReco
   }
   return (
     <form className="cd-form" onSubmit={submit}>
-      <input aria-label="任务内容" value={title} placeholder="下次要做什么" onChange={(event) => setTitle(event.target.value)} />
-      <input type="datetime-local" aria-label="任务时间" value={at} onChange={(event) => setAt(event.target.value)} />
+      <label className="cd-field"><span>任务内容</span><input aria-label="任务内容" value={title} placeholder="下次要做什么" onChange={(event) => setTitle(event.target.value)} /></label>
+      <label className="cd-field"><span>任务时间</span><input type="datetime-local" aria-label="任务时间" value={at} onChange={(event) => setAt(event.target.value)} /></label>
       {error ? <span className="mic-err" role="alert">{error}</span> : null}
       <div className="cd-form-actions"><button type="button" onClick={onClose}>取消</button><button type="submit" className="mic-primary">保存任务</button></div>
     </form>
@@ -822,10 +833,10 @@ function ContactForm({ initial, update, onClose }: { initial: DetailPerson | nul
   }
   return (
     <form className="cd-form" onSubmit={submit}>
-      <input aria-label="联系人姓名" value={name} placeholder="姓名" onChange={(event) => setName(event.target.value)} />
-      <input aria-label="职位" value={role} placeholder="职位" onChange={(event) => setRole(event.target.value)} />
-      <input aria-label="手机号" value={phone} placeholder="手机号，可打码" onChange={(event) => setPhone(event.target.value)} />
-      <input aria-label="微信" value={wechat} placeholder="微信，可打码" onChange={(event) => setWechat(event.target.value)} />
+      <label className="cd-field"><span>联系人姓名</span><input aria-label="联系人姓名" value={name} placeholder="姓名" onChange={(event) => setName(event.target.value)} /></label>
+      <label className="cd-field"><span>职位</span><input aria-label="职位" value={role} placeholder="职位" onChange={(event) => setRole(event.target.value)} /></label>
+      <label className="cd-field"><span>手机号</span><input aria-label="手机号" value={phone} placeholder="手机号，可打码" onChange={(event) => setPhone(event.target.value)} /></label>
+      <label className="cd-field"><span>微信</span><input aria-label="微信" value={wechat} placeholder="微信，可打码" onChange={(event) => setWechat(event.target.value)} /></label>
       <label className="cd-check"><input type="checkbox" checked={primary} onChange={(event) => setPrimary(event.target.checked)} />主要联系人</label>
       <label className="cd-check"><input type="checkbox" checked={decision} onChange={(event) => setDecision(event.target.checked)} />决策人</label>
       {error ? <span className="mic-err" role="alert">{error}</span> : null}
@@ -856,11 +867,11 @@ function DealForm({ update, onClose }: { update: (recipe: (current: CustomerReco
   }
   return (
     <form className="cd-form" onSubmit={submit}>
-      <input aria-label="商机名称" value={name} placeholder="例如精点投" onChange={(event) => setName(event.target.value)} />
-      <input aria-label="预计金额" value={amount} placeholder="预计金额" onChange={(event) => setAmount(event.target.value)} />
-      <select aria-label="商机阶段" value={stage} onChange={(event) => setStage(event.target.value)}>{STAGES.map((item) => <option key={item}>{item}</option>)}</select>
-      <input type="date" aria-label="预计成交" value={expectOn} onChange={(event) => setExpectOn(event.target.value)} />
-      <textarea aria-label="客户反馈" value={feedback} placeholder="客户反馈" onChange={(event) => setFeedback(event.target.value)} />
+      <label className="cd-field"><span>商机名称</span><input aria-label="商机名称" value={name} placeholder="例如精点投" onChange={(event) => setName(event.target.value)} /></label>
+      <label className="cd-field"><span>预计金额</span><input aria-label="预计金额" value={amount} placeholder="预计金额" onChange={(event) => setAmount(event.target.value)} /></label>
+      <label className="cd-field"><span>商机阶段</span><select aria-label="商机阶段" value={stage} onChange={(event) => setStage(event.target.value)}>{STAGES.map((item) => <option key={item}>{item}</option>)}</select></label>
+      <label className="cd-field"><span>预计成交</span><input type="date" aria-label="预计成交" value={expectOn} onChange={(event) => setExpectOn(event.target.value)} /></label>
+      <label className="cd-field"><span>客户反馈</span><textarea aria-label="客户反馈" value={feedback} placeholder="客户反馈" onChange={(event) => setFeedback(event.target.value)} /></label>
       {error ? <span className="mic-err" role="alert">{error}</span> : null}
       <div className="cd-form-actions"><button type="button" onClick={onClose}>取消</button><button type="submit" className="mic-primary">保存商机</button></div>
     </form>
@@ -884,9 +895,9 @@ function ServiceForm({ update, onClose }: { update: (recipe: (current: CustomerR
   }
   return (
     <form className="cd-form" onSubmit={submit}>
-      <input aria-label="服务名称" value={name} placeholder="例如中国制造网会员" onChange={(event) => setName(event.target.value)} />
-      <input type="date" aria-label="服务开始" value={start} onChange={(event) => setStart(event.target.value)} />
-      <input type="date" aria-label="服务到期" value={end} onChange={(event) => setEnd(event.target.value)} />
+      <label className="cd-field"><span>服务名称</span><input aria-label="服务名称" value={name} placeholder="例如中国制造网会员" onChange={(event) => setName(event.target.value)} /></label>
+      <label className="cd-field"><span>服务开始</span><input type="date" aria-label="服务开始" value={start} onChange={(event) => setStart(event.target.value)} /></label>
+      <label className="cd-field"><span>服务到期</span><input type="date" aria-label="服务到期" value={end} onChange={(event) => setEnd(event.target.value)} /></label>
       {error ? <span className="mic-err" role="alert">{error}</span> : null}
       <div className="cd-form-actions"><button type="button" onClick={onClose}>取消</button><button type="submit" className="mic-primary">保存服务</button></div>
     </form>

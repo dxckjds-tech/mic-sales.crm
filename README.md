@@ -1,35 +1,47 @@
 # MIC Sales CRM
 
-独立前端：MIC Sales 销售 CRM 工作台与客户管理。
+React、TypeScript、Vite 构建的独立前端演示项目。包含登录页、工作台、地图客户中心及客户详情页；使用演示客户和汇总指标，尚未接入后端认证或生产业务接口。
 
-源码抽离自 [dxckjds-tech/Zynuvo](https://github.com/dxckjds-tech/Zynuvo) 分支 `cursor/mic-crm-v5-4c9a` 的 `src/crm` 与 `src/assets/crm`，不含 WhatsApp / Electron。
-
-## 技术栈
-
-- React + TypeScript
-- Vite
-- Lucide React
-
-## 开发
+## 本地开发
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-## 构建
+## 页面入口
+
+| 地址 | 内容 |
+| --- | --- |
+| `/` | 登录页：密码显隐、记住账号、登录方式切换。未接入真实认证。 |
+| `/dashboard.html` | 初版演示工作台。 |
+| `/customers.html` | 客户中心：地图、列表、卡片视图，搜索筛选、客户勾选、CSV 导出、新增客户及地址补录。 |
+| `/detail.html?id=youlaite` | 客户详情：企业资料、联系人、标签、跟进记录、合同服务、收款记录及加购商机。 |
+| `/app.html` | 保留原仓库 CRM 应用入口及其工作台、客户管理、日程页面。 |
+
+客户中心可点击公司名称进入客户详情，并返回客户列表。列表与详情目前使用独立的演示状态，新增客户尚未建立完整的跨页面档案同步。编辑内容仅保存在本次页面会话，刷新或跳转可能丢失。记住账号只保存账号名称，不保存密码。
+
+## 地图范围
+
+- 全国省份分布及浙江省、地级市地图。
+- 宁波 10 个区县边界，支持点击地图下钻；页面上额外的地区及乡镇目录已按设计要求取消。
+- 客户地址表单保留浙江省市、区县、乡镇/街道联动选择，以及村/社区/门牌文本。
+- 手动录入有效 WGS84 经纬度的客户可显示定位点。没有自动地址解析，不推测示例客户的精确位置。
+- 地图边界到区县级，未接入乡镇或村级边界。来源与行业汇总、排名及地图气泡为演示数据，与列表当前加载的 10 条示例不构成实时统计。
+- 数据来源及区划快照限制见 [地理数据说明](public/geo/DATA-SOURCES.md)。
+
+## 检查与构建
 
 ```bash
+npm run typecheck
 npm run build
 npm run preview
 ```
 
-## 目录
+Vite 多入口构建输出到 `dist/`，开发依赖与构建产物不提交。页面支持手机、平板和桌面布局，表格在自身区域横向滚动。运行时地图读取仓库内的静态 JSON，不需要在线地图密钥。
 
-```text
-src/
-  main.tsx          入口
-  index.css         全局复位
-  crm/              CRM 应用与页面
-  assets/crm/       品牌与演示图片
-```
+## 仍未实现
+
+真实登录、微信/Microsoft 授权、账号权限、服务器数据库、持久化保存、生产导入、完整分页、真实消息、自动地理编码和 AI 服务均尚未接入。客户分析与 AI 建议为静态演示内容。发布前需补齐上述能力。
+
+原始 CRM 模块抽离自 [dxckjds-tech/Zynuvo](https://github.com/dxckjds-tech/Zynuvo) 分支 `cursor/mic-crm-v5-4c9a` 的 `src/crm` 与 `src/assets/crm`，不包含 WhatsApp 或 Electron。
