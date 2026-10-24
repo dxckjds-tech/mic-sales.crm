@@ -132,6 +132,10 @@ export function Shell() {
               type="button"
               className={crm.nav === item.id ? 'active' : undefined}
               onClick={() => {
+                if (item.id === 'reports') {
+                  location.assign('/analytics.html')
+                  return
+                }
                 if (item.id !== 'customers') crm.closeDetail()
                 crm.setNav(item.id)
               }}
